@@ -24,11 +24,11 @@ export default async function AdminLayout({
   // Bei Groß-/Kleinschreibung: ggf. .select('Rolle') anpassen je nach DB-Schema
   const { data: profile } = await supabase
     .from("profiles")
-    .select("Rolle")
-    .eq("id", user.id)
+    .select('"Rolle"')
+    .eq("user_id", user.id)
     .single();
 
-  const rolle = (profile as { Rolle?: string })?.Rolle;
+  const rolle = (profile as { Rolle?: string })?.Rolle?.trim().toLowerCase();
 
   if (rolle !== "admin" && rolle !== "board") {
     redirect("/dashboard");
