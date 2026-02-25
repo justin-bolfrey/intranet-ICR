@@ -7,6 +7,7 @@ import {
   TabsContent,
 } from "@/components/ui/tabs";
 import { FinanceExport } from "@/components/admin/FinanceExport";
+import { NewsCreator } from "@/components/admin/NewsCreator";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -45,6 +46,7 @@ export default async function AdminPage() {
         <TabsList>
           <TabsTrigger value="members">Mitglieder</TabsTrigger>
           <TabsTrigger value="finance">Finanzen &amp; SEPA</TabsTrigger>
+          <TabsTrigger value="news">News</TabsTrigger>
         </TabsList>
 
         <TabsContent value="members">
@@ -56,6 +58,16 @@ export default async function AdminPage() {
         <TabsContent value="finance">
           <div className="mt-4">
             <FinanceExport />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="news">
+          <div className="mt-4 space-y-2">
+            <h2 className="text-lg font-semibold">Neue News veröffentlichen</h2>
+            <p className="text-sm text-muted-foreground">
+              Schreibe eine Nachricht, die allen Mitgliedern auf dem Schwarzen Brett angezeigt wird.
+            </p>
+            <NewsCreator />
           </div>
         </TabsContent>
       </Tabs>

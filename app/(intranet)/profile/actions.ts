@@ -1,0 +1,80 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/utils/supabase/server";
+
+export type ProfileActionState = {
+  success: boolean;
+  error: string;
+};
+
+export async function updateProfile(
+  _prev: ProfileActionState,
+  formData: FormData
+): Promise<ProfileActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Nicht eingeloggt." };
+  }
+
+  const strasse = (formData.get("strasse") as string | null)?.trim() ?? "";
+  const hausnummer = (formData.get("hausnummer") as string | null)?.trim() ?? "";
+  const plz = (formData.get("plz") as string | null)?.trim() ?? "";
+  const ort = (formData.get("ort") as string | null)?.trim() ?? "";
+  const mobil = (formData.get("mobil") as string | null)?.trim() ?? "";
+  const ibanRaw = (formData.get("iban") as string | null) ?? "";
+  const bicRaw = (formData.get("bic") as string | null) ?? "";
+
+  const iban = ibanRaw.replace(/\s/g, "").toUpperCase();
+  const bic = bicRaw.replace(/\s/g, "").toUpperCase();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      "Straße": strasse,
+      Hausnummer: hausnummer,
+      PLZ: plz,
+      Ort: ort,
+      Handynummer: mobil,
+      IBAN: iban,
+      BIC: bic,
+    })
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { success: false, error: `Fehler beim Speichern: ${error.message}` };
+  }
+
+  revalidatePath("/profile");
+  return { success: true, error: "" };
+}
+
+export async function cancelMembership(): Promise<ProfileActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Nicht eingeloggt." };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      Status: "cancelled",
+      "Datum_Kündigung": new Date().toISOString(),
+    })
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { success: false, error: `Fehler bei der Kündigung: ${error.message}` };
+  }
+
+  revalidatePath("/profile");
+  return { success: true, error: "" };
+}

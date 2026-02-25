@@ -17,24 +17,25 @@ export default async function IntranetLayout({
     redirect("/login");
   }
 
-  const { data: profile, error } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select('"Rolle"')
+    .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  console.log("SERVER CHECK - Profil-Daten:", profile, "Fehler:", error);
-
-  const rawRole = (profile?.["Rolle"] as string | null) ?? "member";
-  const role = rawRole.trim().toLowerCase();
+  const vorname = ((profile?.["Vorname"] as string) ?? "").trim();
+  const nachname = ((profile?.["Nachname"] as string) ?? "").trim();
+  const rawRole = ((profile?.["Rolle"] as string) ?? "member").trim().toLowerCase();
+  const letzterNewsAufruf = (profile?.["letzter_news_aufruf"] as string | null) ?? null;
 
   return (
     <div className="flex min-h-screen bg-muted/30">
-      <Sidebar role={role} />
-      <main className="flex-1 min-h-screen p-6 md:p-8 lg:p-10">
+      <Sidebar
+        profile={{ vorname, nachname, rolle: rawRole, letzterNewsAufruf }}
+      />
+      <main className="min-h-screen flex-1 p-6 md:p-8 lg:p-10">
         {children}
       </main>
     </div>
   );
 }
-
