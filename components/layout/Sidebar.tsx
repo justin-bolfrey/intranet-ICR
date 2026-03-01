@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -139,8 +140,18 @@ export function Sidebar({ profile }: { profile: Profile }) {
             {renderProfileHead()}
             <div className="border-t pt-4">{renderNavLinks()}</div>
           </div>
-          <div className="border-t pt-4">
-            <LogoutButton />
+          <div className="flex flex-col items-center gap-3 border-t pt-4">
+            <div className="flex w-full items-center justify-between gap-2">
+              <Image
+                src="/icr-logo.png"
+                alt="ICR Logo"
+                width={40}
+                height={40}
+                unoptimized
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+              <LogoutButton />
+            </div>
           </div>
         </div>
       </aside>
@@ -161,7 +172,15 @@ export function Sidebar({ profile }: { profile: Profile }) {
       </header>
       <div className="block space-y-2 border-b bg-background px-4 py-2 md:hidden">
         {renderNavLinks()}
-        <div className="border-t pt-2">
+        <div className="flex items-center justify-between gap-2 border-t pt-2">
+          <Image
+            src="/icr-logo.png"
+            alt="ICR Logo"
+            width={32}
+            height={32}
+            unoptimized
+            className="h-8 w-8 shrink-0 object-contain"
+          />
           <LogoutButton />
         </div>
       </div>

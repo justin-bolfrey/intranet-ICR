@@ -1,77 +1,75 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
-import { FinanceExport } from "@/components/admin/FinanceExport";
-import { NewsCreator } from "@/components/admin/NewsCreator";
+import Link from "next/link";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Banknote, Megaphone, CalendarDays, ArrowRight, KeyRound } from "lucide-react";
 
-export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+const ADMIN_CARDS = [
+  {
+    href: "/admin/members",
+    title: "Mitglieder",
+    description: "Mitglieder verwalten, Rollen zuweisen und Übersichten einsehen.",
+    icon: Users,
+  },
+  {
+    href: "/admin/finance",
+    title: "Finanzen & SEPA",
+    description: "SEPA-Export, Beitragsübersichten und CSV/XML-Export für Lastschriften.",
+    icon: Banknote,
+  },
+  {
+    href: "/admin/news",
+    title: "News",
+    description: "Neue Nachrichten für das Schwarze Brett veröffentlichen.",
+    icon: Megaphone,
+  },
+  {
+    href: "/admin/events",
+    title: "Events",
+    description: "Veranstaltungen anlegen, mit Bild und Anmeldung.",
+    icon: CalendarDays,
+  },
+  {
+    href: "/admin/bvh-login",
+    title: "BVH Login",
+    description: "Anfragen für BVH-Zugangsdaten einsehen und abhaken.",
+    icon: KeyRound,
+  },
+];
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select('"Rolle"')
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const rawRole = (profile?.["Rolle"] as string | null) ?? "member";
-  const role = rawRole.trim().toLowerCase();
-
-  // Harte RBAC: Nur admin oder board darf die Seite überhaupt sehen
-  if (role !== "admin" && role !== "board") {
-    redirect("/dashboard");
-  }
-
+export default function AdminPage() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Admin Control Panel
-      </h1>
-      <p className="text-sm text-muted-foreground">
-        Verwalte Mitglieder und Finanzexporte für das ICR Intranet.
-      </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Admin-Bereich</h1>
+        <p className="mt-1 text-muted-foreground">
+          Wähle einen Bereich, um fortzufahren.
+        </p>
+      </div>
 
-      <Tabs defaultValue="members" className="mt-4">
-        <TabsList>
-          <TabsTrigger value="members">Mitglieder</TabsTrigger>
-          <TabsTrigger value="finance">Finanzen &amp; SEPA</TabsTrigger>
-          <TabsTrigger value="news">News</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="members">
-          <div className="mt-4 rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            Hier werden später Werkzeuge zur Mitgliederverwaltung angezeigt.
-          </div>
-        </TabsContent>
-
-        <TabsContent value="finance">
-          <div className="mt-4">
-            <FinanceExport />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="news">
-          <div className="mt-4 space-y-2">
-            <h2 className="text-lg font-semibold">Neue News veröffentlichen</h2>
-            <p className="text-sm text-muted-foreground">
-              Schreibe eine Nachricht, die allen Mitgliedern auf dem Schwarzen Brett angezeigt wird.
-            </p>
-            <NewsCreator />
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {ADMIN_CARDS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className="group block">
+              <Card className="h-full border-2 transition-all duration-300 ease-out hover:scale-[1.02] hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10">
+                <CardHeader className="flex flex-row items-start justify-between gap-2">
+                  <div className="rounded-lg bg-primary/10 p-2.5 text-primary transition-colors duration-300 group-hover:bg-primary/20">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary" />
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <CardTitle className="text-lg transition-colors duration-300 group-hover:text-primary">
+                    {item.title}
+                  </CardTitle>
+                  <CardDescription className="mt-1.5">
+                    {item.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }
-

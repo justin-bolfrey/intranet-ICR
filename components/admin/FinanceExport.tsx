@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,9 +20,17 @@ import {
   type FilterStats,
 } from "@/app/(intranet)/admin/actions/finance";
 
+const MIN_YEAR = 2000;
+
+function getMaxYear() {
+  return new Date().getFullYear() + 1;
+}
+
 export function FinanceExport() {
+  const currentYear = new Date().getFullYear();
   const [semester, setSemester] = useState<Semester>("SoSe");
-  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [year, setYear] = useState<number>(currentYear);
+  const maxYear = getMaxYear();
   const [previewData, setPreviewData] = useState<FinanceMemberRow[]>([]);
   const [stats, setStats] = useState<FilterStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -212,12 +221,35 @@ export function FinanceExport() {
             <Label className="text-xs font-medium text-muted-foreground">
               Jahr
             </Label>
-            <input
-              type="number"
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2"
-            />
+            <div className="flex h-9 w-full items-center overflow-hidden rounded-md border border-input bg-background">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-none border-r border-input"
+                onClick={() => setYear((y) => Math.max(MIN_YEAR, y - 1))}
+                disabled={year <= MIN_YEAR}
+                aria-label="Jahr zurück"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span
+                className={`min-w-16 flex-1 text-center text-sm font-medium tabular-nums ${semester === "WiSe" ? "min-w-24" : ""}`}
+              >
+                {semester === "WiSe" ? `${year}/${year + 1}` : year}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-none border-l border-input"
+                onClick={() => setYear((y) => Math.min(maxYear, y + 1))}
+                disabled={year >= maxYear}
+                aria-label="Jahr vor"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="flex items-end">
             <Button
@@ -236,8 +268,11 @@ export function FinanceExport() {
           </p>
         )}
         <p className="text-xs text-muted-foreground">
-          Sommersemester-Stichtag: 15.03.{year}, Wintersemester-Stichtag:
-          01.10.{year}. Alle Eintritte ab Stichtag gelten als Freisemester.
+          {semester === "SoSe" ? (
+            <>Sommersemester {year}: Stichtag 15.03.{year}. Alle Eintritte ab Stichtag gelten als Freisemester.</>
+          ) : (
+            <>Wintersemester {year}/{year + 1}: Stichtag 01.10.{year}. Alle Eintritte ab Stichtag gelten als Freisemester.</>
+          )}
         </p>
       </div>
 

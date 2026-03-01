@@ -1,25 +1,22 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { CancelMembership } from "@/components/profile/CancelMembership";
+import { MyEventsSection } from "@/components/profile/MyEventsSection";
+import { getCachedAuth, getCachedSupabase } from "@/utils/supabase/cached-auth";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getCachedAuth();
 
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile, error } = await supabase
+  const supabase = await getCachedSupabase();
+  const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
-
-  console.log("PROFILE DEBUG:", { profile, error });
 
   const profileData = {
     vorname: ((profile?.["Vorname"] as string) ?? "").trim(),
@@ -43,6 +40,8 @@ export default async function ProfilePage() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Mein Profil</h1>
       <ProfileForm profile={profileData} />
+
+      <MyEventsSection />
 
       {!isCancelled && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-6">

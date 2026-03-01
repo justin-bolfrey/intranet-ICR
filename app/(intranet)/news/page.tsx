@@ -8,7 +8,7 @@ export default async function NewsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Schwarzes Brett</h1>
+        <h1 className="text-3xl font-bold">News</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Neuigkeiten und Ankündigungen für alle Mitglieder.
         </p>

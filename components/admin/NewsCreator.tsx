@@ -36,7 +36,11 @@ export function NewsCreator() {
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="flex min-h-[calc(100vh-12rem)] w-full flex-col gap-6"
+    >
       <div className="space-y-1.5">
         <Label htmlFor="news-title">Betreff</Label>
         <Input
@@ -44,17 +48,17 @@ export function NewsCreator() {
           name="title"
           placeholder="z.B. Neues Semester, neue Regeln"
           required
+          className="w-full"
         />
       </div>
-      <div className="space-y-1.5">
+      <div className="flex min-h-0 flex-1 flex-col space-y-1.5">
         <Label htmlFor="news-content">Nachricht</Label>
         <textarea
           id="news-content"
           name="content"
-          rows={5}
           required
           placeholder="Schreibe hier deine Nachricht an alle Mitglieder..."
-          className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
+          className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[calc(100vh-20rem)] w-full flex-1 rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2"
         />
       </div>
       <div className="flex justify-end">

@@ -126,3 +126,23 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-welcome {
+  animation: page-fade-in 0.5s ease-out forwards;
+}
+
+/* Fade-in bei jeder Intranet-Seite für elegante Navigation */
+.intranet-page-fade-in {
+  animation: page-fade-in 0.4s ease-out forwards;
+}
