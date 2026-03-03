@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { getCachedAuth } from "@/utils/supabase/cached-auth";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { IntranetPageTransition } from "@/components/layout/IntranetPageTransition";
 
 export default async function IntranetLayout({
   children,
@@ -20,14 +21,14 @@ export default async function IntranetLayout({
   const letzterNewsAufruf = (profile?.["letzter_news_aufruf"] as string | null) ?? null;
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex h-screen overflow-hidden bg-muted/30">
       <Sidebar
         profile={{ vorname, nachname, rolle: rawRole, letzterNewsAufruf }}
       />
-      <main className="min-h-screen flex-1 p-6 md:p-8 lg:p-10">
-        <div className="intranet-page-fade-in h-full">
+      <main className="h-screen flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
+        <IntranetPageTransition>
           {children}
-        </div>
+        </IntranetPageTransition>
       </main>
     </div>
   );

@@ -138,11 +138,39 @@
   }
 }
 
-.dashboard-welcome {
-  animation: page-fade-in 0.5s ease-out forwards;
-}
-
 /* Fade-in bei jeder Intranet-Seite für elegante Navigation */
 .intranet-page-fade-in {
-  animation: page-fade-in 0.4s ease-out forwards;
+  animation: page-fade-in 0.2s ease-out both;
+}
+
+/* Gestaffelte, subtile Animation für Abschnitts-Elemente einer Seite */
+.intranet-page-fade-in > :first-child > * {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: page-fade-in 0.32s ease-out forwards;
+}
+
+.intranet-page-fade-in > :first-child > *:nth-child(1) {
+  animation-delay: 0.03s;
+}
+.intranet-page-fade-in > :first-child > *:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.intranet-page-fade-in > :first-child > *:nth-child(3) {
+  animation-delay: 0.13s;
+}
+.intranet-page-fade-in > :first-child > *:nth-child(4) {
+  animation-delay: 0.18s;
+}
+.intranet-page-fade-in > :first-child > *:nth-child(5) {
+  animation-delay: 0.23s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intranet-page-fade-in,
+  .intranet-page-fade-in > :first-child > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

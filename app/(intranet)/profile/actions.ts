@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
 export type ProfileActionState = {
@@ -63,18 +64,45 @@ export async function cancelMembership(): Promise<ProfileActionState> {
     return { success: false, error: "Nicht eingeloggt." };
   }
 
-  const { error } = await supabase
+  const cancelledAt = new Date().toISOString();
+
+  // 1) Primärer Write-Path: neue Felder `status` + `cancelled_at`
+  // Fallback auf Legacy-Spalten, falls die neue Struktur noch nicht existiert.
+  let { error } = await supabase
     .from("profiles")
     .update({
-      Status: "cancelled",
-      "Datum_Kündigung": new Date().toISOString(),
+      status: "cancelled",
+      cancelled_at: cancelledAt,
     })
     .eq("user_id", user.id);
+
+  if (error) {
+    const fallback = await supabase
+      .from("profiles")
+      .update({
+        Status: "cancelled",
+        "Datum_Kündigung": cancelledAt,
+      })
+      .eq("user_id", user.id);
+    error = fallback.error;
+  }
 
   if (error) {
     return { success: false, error: `Fehler bei der Kündigung: ${error.message}` };
   }
 
-  revalidatePath("/profile");
-  return { success: true, error: "" };
+  // 2) Session killen
+  const { error: signOutError } = await supabase.auth.signOut();
+  if (signOutError) {
+    return {
+      success: false,
+      error: `Kündigung gespeichert, aber Abmeldung fehlgeschlagen: ${signOutError.message}`,
+    };
+  }
+
+  // 3) Layout-Cache invalidieren
+  revalidatePath("/", "layout");
+
+  // 4) Harte Weiterleitung zum Login
+  redirect("/login");
 }

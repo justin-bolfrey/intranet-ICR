@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isCancelledProfile } from "@/lib/profile-status";
 
 export async function middleware(request: NextRequest) {
   // 1. Initialisiere die Response
@@ -35,6 +36,28 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const redirectWithSupabaseCookies = (to: string) => {
+    const response = NextResponse.redirect(new URL(to, request.url));
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      response.cookies.set(cookie);
+    }
+    return response;
+  };
+
+  // Kritische Zugriffssperre: gekündigte Accounts sofort abmelden + blockieren.
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (isCancelledProfile((profile ?? null) as Record<string, unknown> | null)) {
+      await supabase.auth.signOut();
+      return redirectWithSupabaseCookies("/login");
+    }
+  }
 
   // 4. Definiere die Zonen
   // Wichtig: /reset-password darf NICHT bei isAuthRoute stehen – sonst würde

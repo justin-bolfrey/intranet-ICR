@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { isCancelledProfile } from "@/lib/profile-status";
 
 /**
  * Ein Supabase-Client pro Request (wird von Layouts und Seiten geteilt).
@@ -28,9 +29,16 @@ export const getCachedAuth = cache(async () => {
   const supabase = await getCachedSupabase();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("Vorname, Nachname, Rolle, letzter_news_aufruf")
+    .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  if (isCancelledProfile((profile ?? null) as Record<string, unknown> | null)) {
+    // Zusätzliche Schutzebene: Zugriff auf Intranet sofort entziehen.
+    // In Middleware wird die Session zusätzlich mit Cookie-Write invalidiert.
+    await supabase.auth.signOut();
+    return { user: null, profile: null };
+  }
 
   return { user, profile };
 });
