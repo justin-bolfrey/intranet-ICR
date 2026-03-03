@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 export type ProfileActionState = {
   success: boolean;
@@ -65,14 +66,27 @@ export async function cancelMembership(): Promise<ProfileActionState> {
   }
 
   const cancelledAt = new Date().toISOString();
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-  // 1) Zielprofil robust auflösen (einige Datensätze verwenden user_id, andere id).
-  const { data: profileRow, error: profileLookupError } = await supabase
+  // 1) Zielprofil robust auflösen (RLS-unabhängig via Service-Role).
+  let { data: profileRow, error: profileLookupError } = await admin
     .from("profiles")
-    .select("id, user_id")
-    .or(`user_id.eq.${user.id},id.eq.${user.id}`)
-    .limit(1)
+    .select("id")
+    .eq("user_id", user.id)
     .maybeSingle();
+
+  if (!profileRow && !profileLookupError) {
+    const fallback = await admin
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    profileRow = fallback.data;
+    profileLookupError = fallback.error;
+  }
 
   if (profileLookupError) {
     return {
@@ -91,7 +105,7 @@ export async function cancelMembership(): Promise<ProfileActionState> {
   }
 
   // 2) Datenbank-Update: explizit auf den gefundenen Datensatz.
-  const { data: updatedRow, error: updateError } = await supabase
+  const { data: updatedRow, error: updateError } = await admin
     .from("profiles")
     .update({
       Status: "cancelled",
