@@ -32,7 +32,7 @@ export function StatusPieChart({ data }: Props) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number) => [value, ""]}
+          formatter={(value) => [Number(value ?? 0), ""]}
           contentStyle={{ borderRadius: 8, border: "1px solid #e4e4e7" }}
         />
         <Legend />

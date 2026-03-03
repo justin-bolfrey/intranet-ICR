@@ -38,7 +38,7 @@ export function DemographicsChart({ data }: Props) {
           tickLine={false}
         />
         <Tooltip
-          formatter={(value: number) => [value, "Anzahl"]}
+          formatter={(value) => [Number(value ?? 0), "Anzahl"]}
           contentStyle={{ borderRadius: 8, border: "1px solid #e4e4e7" }}
         />
         <Bar dataKey="count" fill={ACCENT} radius={[0, 4, 4, 0]} name="Anzahl" />

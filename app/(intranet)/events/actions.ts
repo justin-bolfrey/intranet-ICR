@@ -395,7 +395,6 @@ export async function toggleRegistration(
     if (error) return { error: error.message };
   }
 
-  revalidateTag("events");
   revalidatePath("/events");
   revalidatePath("/calendar");
   revalidatePath("/profile");
