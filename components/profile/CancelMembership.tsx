@@ -28,8 +28,20 @@ export function CancelMembership() {
       } else {
         toast.error(result.error || "Ein Fehler ist aufgetreten.");
       }
-    } catch {
-      toast.error("Ein unerwarteter Fehler ist aufgetreten.");
+    } catch (err) {
+      const maybeDigest =
+        typeof err === "object" &&
+        err !== null &&
+        "digest" in err &&
+        typeof (err as { digest?: unknown }).digest === "string"
+          ? (err as { digest: string }).digest
+          : "";
+
+      // redirect("/login") in Server Actions wirft intern NEXT_REDIRECT.
+      // Das ist hier kein Fehlerfall und soll keinen Toast auslösen.
+      if (!maybeDigest.startsWith("NEXT_REDIRECT")) {
+        toast.error("Ein unerwarteter Fehler ist aufgetreten.");
+      }
     } finally {
       setLoading(false);
     }

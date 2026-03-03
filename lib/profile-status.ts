@@ -3,8 +3,14 @@ export function getProfileStatus(
 ): string {
   if (!profile) return "";
 
-  const rawStatus = profile.status ?? profile.Status ?? "";
-  return String(rawStatus).trim().toLowerCase();
+  const candidates = [profile.status, profile.Status]
+    .map((v) => String(v ?? "").trim().toLowerCase())
+    .filter(Boolean);
+
+  // Sicherheitspriorität: sobald eines der Status-Felder "cancelled" ist, gilt der Account als gekündigt.
+  if (candidates.includes("cancelled")) return "cancelled";
+
+  return candidates[0] ?? "";
 }
 
 export function isCancelledProfile(

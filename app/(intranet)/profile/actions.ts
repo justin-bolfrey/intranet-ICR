@@ -66,29 +66,51 @@ export async function cancelMembership(): Promise<ProfileActionState> {
 
   const cancelledAt = new Date().toISOString();
 
-  // 1) Primärer Write-Path: neue Felder `status` + `cancelled_at`
-  // Fallback auf Legacy-Spalten, falls die neue Struktur noch nicht existiert.
-  let { error } = await supabase
+  // 1) Datenbank-Update (Legacy-Felder zuerst, da diese im aktuellen Intranet aktiv verwendet werden)
+  const legacyUpdate = await supabase
     .from("profiles")
     .update({
-      status: "cancelled",
-      cancelled_at: cancelledAt,
+      Status: "cancelled",
+      "Datum_Kündigung": cancelledAt,
     })
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("user_id")
+    .maybeSingle();
 
-  if (error) {
-    const fallback = await supabase
+  let updateWorked = !legacyUpdate.error && !!legacyUpdate.data;
+  let updateErrorMessage = legacyUpdate.error?.message ?? "";
+
+  // Falls Legacy-Spalten nicht existieren: Fallback auf neue Feldnamen.
+  if (!updateWorked) {
+    const modernUpdate = await supabase
       .from("profiles")
       .update({
-        Status: "cancelled",
-        "Datum_Kündigung": cancelledAt,
+        status: "cancelled",
+        cancelled_at: cancelledAt,
+      })
+      .eq("user_id", user.id)
+      .select("user_id")
+      .maybeSingle();
+
+    updateWorked = !modernUpdate.error && !!modernUpdate.data;
+    updateErrorMessage =
+      modernUpdate.error?.message || updateErrorMessage || "Profil konnte nicht aktualisiert werden.";
+  } else {
+    // Best effort: neue Felder zusätzlich mitschreiben, falls vorhanden.
+    await supabase
+      .from("profiles")
+      .update({
+        status: "cancelled",
+        cancelled_at: cancelledAt,
       })
       .eq("user_id", user.id);
-    error = fallback.error;
   }
 
-  if (error) {
-    return { success: false, error: `Fehler bei der Kündigung: ${error.message}` };
+  if (!updateWorked) {
+    return {
+      success: false,
+      error: `Fehler bei der Kündigung: ${updateErrorMessage}`,
+    };
   }
 
   // 2) Session killen
