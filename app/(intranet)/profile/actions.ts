@@ -66,14 +66,40 @@ export async function cancelMembership(): Promise<ProfileActionState> {
 
   const cancelledAt = new Date().toISOString();
 
-  // 1) Datenbank-Update: nur die in eurer DB vorhandenen Felder
-  const { error: updateError } = await supabase
+  // 1) Zielprofil robust auflösen (einige Datensätze verwenden user_id, andere id).
+  const { data: profileRow, error: profileLookupError } = await supabase
+    .from("profiles")
+    .select("id, user_id")
+    .or(`user_id.eq.${user.id},id.eq.${user.id}`)
+    .limit(1)
+    .maybeSingle();
+
+  if (profileLookupError) {
+    return {
+      success: false,
+      error: `Fehler beim Laden des Profils: ${profileLookupError.message}`,
+    };
+  }
+
+  const profileId = String((profileRow as { id?: unknown } | null)?.id ?? "").trim();
+  if (!profileId) {
+    return {
+      success: false,
+      error:
+        "Kein passender Profil-Datensatz gefunden. Bitte kontaktiere den Vorstand/Support.",
+    };
+  }
+
+  // 2) Datenbank-Update: explizit auf den gefundenen Datensatz.
+  const { data: updatedRow, error: updateError } = await supabase
     .from("profiles")
     .update({
       Status: "cancelled",
       "Datum_Kündigung": cancelledAt,
     })
-    .eq("user_id", user.id);
+    .eq("id", profileId)
+    .select('"Status", "Datum_Kündigung"')
+    .maybeSingle();
 
   if (updateError) {
     return {
@@ -82,7 +108,25 @@ export async function cancelMembership(): Promise<ProfileActionState> {
     };
   }
 
-  // 2) Session killen
+  const updatedStatus = String(
+    ((updatedRow as Record<string, unknown> | null)?.Status as string | undefined) ?? ""
+  )
+    .trim()
+    .toLowerCase();
+  const updatedCancelDate = String(
+    ((updatedRow as Record<string, unknown> | null)?.["Datum_Kündigung"] as string | undefined) ??
+      ""
+  ).trim();
+
+  if (updatedStatus !== "cancelled" || !updatedCancelDate) {
+    return {
+      success: false,
+      error:
+        "Kündigung konnte nicht bestätigt werden (Status/Datum nicht gesetzt). Bitte erneut versuchen.",
+    };
+  }
+
+  // 3) Session killen
   const { error: signOutError } = await supabase.auth.signOut();
   if (signOutError) {
     return {
@@ -91,9 +135,9 @@ export async function cancelMembership(): Promise<ProfileActionState> {
     };
   }
 
-  // 3) Layout-Cache invalidieren
+  // 4) Layout-Cache invalidieren
   revalidatePath("/", "layout");
 
-  // 4) Harte Weiterleitung zum Login
+  // 5) Harte Weiterleitung zum Login
   redirect("/login");
 }
