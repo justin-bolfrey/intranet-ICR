@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { getCachedAuth } from "@/utils/supabase/cached-auth";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
@@ -132,7 +132,6 @@ export async function createEvent(
     .single();
 
   if (error) return { id: null, error: error.message };
-  revalidateTag("events");
   revalidatePath("/events");
   revalidatePath("/calendar");
   return { id: (row?.id as string) ?? null, error: "" };
