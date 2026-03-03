@@ -172,7 +172,7 @@ export async function getFinanceExportDataAction(
   }
 
   try {
-    const rows = await getFinanceExportData(semester, yearValue);
+    const { rows } = await getFinanceExportData(semester, yearValue);
     return {
       error: "",
       semester,
