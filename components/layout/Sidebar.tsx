@@ -13,6 +13,7 @@ import {
   LineChart,
   Menu,
   Settings,
+  X,
   Users,
   UsersRound,
   type LucideIcon,
@@ -60,6 +61,7 @@ function getInitials(vorname: string, nachname: string) {
 export function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
   const [hasUnread, setHasUnread] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const lastReadRef = useRef(profile.letzterNewsAufruf);
   const lastCheckAtRef = useRef<number | null>(null);
 
@@ -86,15 +88,25 @@ export function Sidebar({ profile }: { profile: Profile }) {
     return () => { cancelled = true; };
   }, [pathname]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
+
   const visibleItems = NAV_ITEMS.filter((item) =>
     item.allowedRoles.includes(profile.rolle)
   );
   const initials = getInitials(profile.vorname, profile.nachname);
   const roleLabel = ROLE_LABELS[profile.rolle] ?? profile.rolle;
 
-  const renderProfileHead = () => (
+  const renderProfileHead = (onClick?: () => void) => (
     <Link
       href="/profile"
+      onClick={onClick}
       className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-red-50"
     >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white transition-transform duration-300 group-hover:scale-105">
@@ -109,7 +121,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
     </Link>
   );
 
-  const renderNavLinks = () => (
+  const renderNavLinks = (onNavigate?: () => void) => (
     <nav aria-label="Intranet Navigation">
       <ul className="space-y-1">
         {visibleItems.map((item) => {
@@ -121,6 +133,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
             <li key={item.href}>
               <Link
                 href={item.href}
+                onClick={onNavigate}
                 className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
                   active
                     ? "bg-red-50 font-medium text-primary"
@@ -166,22 +179,8 @@ export function Sidebar({ profile }: { profile: Profile }) {
       </aside>
 
       {/* Mobile Topbar */}
-      <header className="flex w-full items-center justify-between border-b bg-background px-4 py-3 md:hidden">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
-            {initials}
-          </div>
-          <span className="text-sm font-semibold">
-            {profile.vorname} {profile.nachname}
-          </span>
-        </div>
-        <Button variant="outline" size="icon" aria-label="Navigation oeffnen">
-          <Menu className="h-5 w-5" />
-        </Button>
-      </header>
-      <div className="block space-y-2 border-b bg-background px-4 py-2 md:hidden">
-        {renderNavLinks()}
-        <div className="flex items-center justify-between gap-2 border-t pt-2">
+      <header className="sticky top-0 z-40 flex w-full items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <Image
             src="/icr-logo.png"
             alt="ICR Logo"
@@ -190,9 +189,68 @@ export function Sidebar({ profile }: { profile: Profile }) {
             unoptimized
             className="h-8 w-8 shrink-0 object-contain"
           />
-          <LogoutButton />
+          <span className="text-sm font-semibold">ICR Intranet</span>
+        </Link>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Navigation oeffnen"
+          onClick={() => setIsOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      </header>
+
+      {/* Mobile Drawer */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/40 transition-opacity md:hidden ${
+          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={() => setIsOpen(false)}
+      />
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] border-r bg-background p-4 transition-transform duration-200 md:hidden ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        aria-hidden={!isOpen}
+      >
+        <div className="flex h-full flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/icr-logo.png"
+                  alt="ICR Logo"
+                  width={32}
+                  height={32}
+                  unoptimized
+                  className="h-8 w-8 shrink-0 object-contain"
+                />
+                <span className="text-sm font-semibold">Navigation</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Navigation schliessen"
+                onClick={() => setIsOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            {renderProfileHead(() => setIsOpen(false))}
+            <div className="border-t pt-3">{renderNavLinks(() => setIsOpen(false))}</div>
+          </div>
+
+          <div className="border-t pt-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+                {initials}
+              </div>
+              <LogoutButton />
+            </div>
+          </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 }

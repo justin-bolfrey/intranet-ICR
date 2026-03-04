@@ -21,11 +21,11 @@ export default async function IntranetLayout({
   const letzterNewsAufruf = (profile?.["letzter_news_aufruf"] as string | null) ?? null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted/30">
+    <div className="min-h-screen bg-muted/30 md:flex md:h-screen md:overflow-hidden">
       <Sidebar
         profile={{ vorname, nachname, rolle: rawRole, letzterNewsAufruf }}
       />
-      <main className="h-screen flex-1 overflow-y-auto p-6 pb-24 md:p-8 md:pb-28 lg:p-10 lg:pb-32">
+      <main className="w-full p-4 pb-24 md:h-screen md:flex-1 md:overflow-y-auto md:p-8 md:pb-28 lg:p-10 lg:pb-32">
         <IntranetPageTransition>
           {children}
         </IntranetPageTransition>
