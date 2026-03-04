@@ -137,6 +137,49 @@ export async function createEvent(
   return { id: (row?.id as string) ?? null, error: "" };
 }
 
+export async function deleteEvent(
+  eventId: string
+): Promise<{ error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nicht eingeloggt." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const role = ((profile?.["Rolle"] as string) ?? "member").trim().toLowerCase();
+  if (role !== "admin" && role !== "board") {
+    return { error: "Nur Admins/Vorstand dürfen Events entfernen." };
+  }
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Registrierungen zuerst entfernen, um FK-Konflikte zu vermeiden.
+  const { error: regError } = await admin
+    .from("event_registrations")
+    .delete()
+    .eq("event_id", eventId);
+  if (regError) return { error: regError.message };
+
+  const { error: evError } = await admin
+    .from("events")
+    .delete()
+    .eq("id", eventId);
+  if (evError) return { error: evError.message };
+
+  revalidatePath("/events");
+  revalidatePath("/calendar");
+  revalidatePath("/admin/events");
+  return { error: "" };
+}
+
 async function fetchEventsFromDb(): Promise<EventWithRegistrations[]> {
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

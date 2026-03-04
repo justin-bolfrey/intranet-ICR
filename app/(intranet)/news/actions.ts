@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
@@ -64,7 +64,7 @@ export async function createNews(
   return { success: true, error: "" };
 }
 
-export async function getNews(): Promise<NewsItem[]> {
+async function fetchNewsFromDb(): Promise<NewsItem[]> {
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -109,6 +109,10 @@ export async function getNews(): Promise<NewsItem[]> {
   });
 }
 
+export const getNews = unstable_cache(fetchNewsFromDb, ["news-list"], {
+  revalidate: 60,
+});
+
 export async function markNewsAsRead(): Promise<void> {
   const supabase = await createClient();
   const {
@@ -137,4 +141,36 @@ export async function checkUnreadNews(lastReadAt: string | null): Promise<boolea
 
   const { count } = await query;
   return (count ?? 0) > 0;
+}
+
+export async function deleteNews(id: string): Promise<{ error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Nicht eingeloggt." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const role = ((profile?.["Rolle"] as string) ?? "member").trim().toLowerCase();
+  if (role !== "admin" && role !== "board") {
+    return { error: "Nur Admins/Vorstand dürfen News entfernen." };
+  }
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { error } = await admin.from("news").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/news");
+  revalidatePath("/", "layout");
+  return { error: "" };
 }

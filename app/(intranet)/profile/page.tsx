@@ -37,7 +37,7 @@ export default async function ProfilePage() {
   const isCancelled = profileData.status === "cancelled";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 md:pb-28 lg:pb-32">
       <h1 className="text-3xl font-bold">Mein Profil</h1>
       <ProfileForm profile={profileData} />
 

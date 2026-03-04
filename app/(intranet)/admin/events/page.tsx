@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Users, CalendarPlus } from "lucide-react";
+import { ArrowLeft, ChevronRight, Users, CalendarPlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventCreator } from "@/components/admin/EventCreator";
 import { getEvents } from "@/app/(intranet)/events/actions";
+import { DeleteEventButton } from "@/components/admin/DeleteEventButton";
 
 export default async function AdminEventsPage() {
   const events = await getEvents();
@@ -49,11 +50,17 @@ export default async function AdminEventsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
-            <div>
-              <CardTitle className="text-lg">Aktive Events verwalten</CardTitle>
-              <CardDescription className="mt-1.5">
-                Event anklicken, um Teilnehmer (Name, Studiengang, Rolle) zu sehen.
-              </CardDescription>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-lg">Aktive Events verwalten</CardTitle>
+                <CardDescription className="mt-1.5">
+                  Event anklicken, um Teilnehmer zu sehen – oder dauerhaft entfernen.
+                </CardDescription>
+              </div>
+              <div className="hidden items-center gap-1 text-xs font-medium text-muted-foreground sm:flex">
+                <Trash2 className="h-4 w-4" />
+                <span>Event entfernen</span>
+              </div>
             </div>
             {events.length === 0 ? (
               <p className="rounded-lg border border-dashed bg-muted/20 p-4 text-center text-sm text-muted-foreground">
@@ -74,25 +81,28 @@ export default async function AdminEventsPage() {
                     : event.event_date;
                   const count = event.registrations?.length ?? 0;
                   return (
-                    <li key={event.id}>
-                      <Link
-                        href={`/admin/events/${event.id}`}
-                        className="group flex items-center justify-between gap-4 px-4 py-3 text-left transition-all duration-300 hover:bg-muted/50"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-medium transition-colors duration-300 group-hover:text-primary">
-                            {event.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{dateStr}</p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2 text-muted-foreground">
-                          <span className="flex items-center gap-1 text-sm">
-                            <Users className="h-4 w-4" />
-                            {count}
-                          </span>
-                          <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary" />
-                        </div>
-                      </Link>
+                    <li key={event.id} className="px-4 py-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <Link
+                          href={`/admin/events/${event.id}`}
+                          className="group flex flex-1 items-center justify-between gap-4 rounded-md px-0 py-1 text-left transition-all duration-300 hover:bg-muted/50"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium transition-colors duration-300 group-hover:text-primary">
+                              {event.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{dateStr}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2 text-muted-foreground">
+                            <span className="flex items-center gap-1 text-sm">
+                              <Users className="h-4 w-4" />
+                              {count}
+                            </span>
+                            <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary" />
+                          </div>
+                        </Link>
+                        <DeleteEventButton eventId={event.id} title={event.title} />
+                      </div>
                     </li>
                   );
                 })}

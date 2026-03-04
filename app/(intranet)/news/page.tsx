@@ -1,9 +1,17 @@
 import { NewsCard } from "@/components/news/NewsCard";
 import { getNews, markNewsAsRead } from "./actions";
+import { getCachedAuth } from "@/utils/supabase/cached-auth";
 
 export default async function NewsPage() {
-  await markNewsAsRead();
+  const { user, profile } = await getCachedAuth();
+  if (user) {
+    await markNewsAsRead();
+  }
   const news = await getNews();
+
+  const role =
+    ((profile?.["Rolle"] as string) ?? "member").trim().toLowerCase();
+  const canDelete = role === "admin" || role === "board";
 
   return (
     <div className="space-y-6">
@@ -35,10 +43,12 @@ export default async function NewsPage() {
             return (
               <NewsCard
                 key={item.id}
+                id={item.id}
                 title={item.title}
                 content={item.content}
                 author={`${item.author_vorname} ${item.author_nachname}`.trim()}
                 date={formatted}
+                canDelete={canDelete}
               />
             );
           })}

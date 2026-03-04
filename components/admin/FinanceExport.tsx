@@ -17,6 +17,7 @@ import {
   getFinanceExportData,
   type Semester,
   type FinanceMemberRow,
+  type InvalidFinanceMemberRow,
   type FilterStats,
 } from "@/app/(intranet)/admin/actions/finance";
 
@@ -26,12 +27,22 @@ function getMaxYear() {
   return new Date().getFullYear() + 1;
 }
 
+function getPeriodLabel(semester: Semester, year: number): string {
+  const yy = String(year).slice(-2);
+  if (semester === "WiSe") {
+    const yyNext = String(year + 1).slice(-2);
+    return `WS${yy}/${yyNext}`;
+  }
+  return `SS${yy}`;
+}
+
 export function FinanceExport() {
   const currentYear = new Date().getFullYear();
   const [semester, setSemester] = useState<Semester>("SoSe");
   const [year, setYear] = useState<number>(currentYear);
   const maxYear = getMaxYear();
-  const [previewData, setPreviewData] = useState<FinanceMemberRow[]>([]);
+  const [validMembers, setValidMembers] = useState<FinanceMemberRow[]>([]);
+  const [invalidMembers, setInvalidMembers] = useState<InvalidFinanceMemberRow[]>([]);
   const [stats, setStats] = useState<FilterStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,12 +52,15 @@ export function FinanceExport() {
     setIsLoading(true);
     setError(null);
     try {
-      const { rows, stats: newStats } = await getFinanceExportData(semester, year);
-      setPreviewData(rows);
+      const { validMembers, invalidMembers, stats: newStats } =
+        await getFinanceExportData(semester, year);
+      setValidMembers(validMembers);
+      setInvalidMembers(invalidMembers);
       setStats(newStats);
     } catch (err) {
       console.error("Fehler beim Laden der Daten:", err);
-      setPreviewData([]);
+      setValidMembers([]);
+      setInvalidMembers([]);
       setStats(null);
       setError(
         err instanceof Error
@@ -59,10 +73,10 @@ export function FinanceExport() {
   };
 
   function handleExportCsv() {
-    if (!previewData.length) return;
+    if (!validMembers.length) return;
 
     const header = "Name;IBAN;BIC;Betrag;Mandatsreferenz";
-    const lines = previewData.map((row) => {
+    const lines = validMembers.map((row) => {
       const name = `${row.firstName} ${row.lastName}`.trim();
       const amount = row.amount.toFixed(2).replace(".", ",");
       return [name, row.iban, row.bic, amount, row.id].join(";");
@@ -83,21 +97,22 @@ export function FinanceExport() {
   }
 
   function handleExportSepaXml() {
-    if (!previewData.length) return;
+    if (!validMembers.length) return;
 
     const today = new Date().toISOString().slice(0, 10);
-    const messageId = `ICR-${today}-${semester}-${year}`;
+    const periodLabel = getPeriodLabel(semester, year);
+    const messageId = `Mitgliedsbeitrag ${periodLabel}`;
 
-    const totalAmount = previewData
+    const totalAmount = validMembers
       .reduce((sum, row) => sum + row.amount, 0)
       .toFixed(2);
 
-    const creditorName = "ICR Regensburg";
-    const creditorIban = "DE00000000000000000000"; // TODO: echte IBAN hinterlegen
-    const creditorBic = "BANKDEFFXXX"; // TODO: echte BIC hinterlegen
-    const creditorId = "DE98ZZZ00000000000"; // TODO: echte Gläubiger-ID hinterlegen
+    const creditorName = "Investmentclub Regensburg e.V.";
+    const creditorIban = "DE79750500000026907543";
+    const creditorBic = "BYLADEM1RBG";
+    const creditorId = "DE58ZZZ00001948916";
 
-    const txInfos = previewData
+    const txInfos = validMembers
       .map((row, idx) => {
         const name = `${row.firstName} ${row.lastName}`.trim() || "Mitglied";
         const amount = row.amount.toFixed(2);
@@ -140,16 +155,16 @@ export function FinanceExport() {
     <GrpHdr>
       <MsgId>${messageId}</MsgId>
       <CreDtTm>${today}T00:00:00</CreDtTm>
-      <NbOfTxs>${previewData.length}</NbOfTxs>
+      <NbOfTxs>${validMembers.length}</NbOfTxs>
       <CtrlSum>${totalAmount}</CtrlSum>
       <InitgPty>
         <Nm>${creditorName}</Nm>
       </InitgPty>
     </GrpHdr>
     <PmtInf>
-      <PmtInfId>${messageId}-P1</PmtInfId>
+      <PmtInfId>${messageId}</PmtInfId>
       <PmtMtd>DD</PmtMtd>
-      <NbOfTxs>${previewData.length}</NbOfTxs>
+      <NbOfTxs>${validMembers.length}</NbOfTxs>
       <CtrlSum>${totalAmount}</CtrlSum>
       <PmtTpInf>
         <SvcLvl>
@@ -201,7 +216,7 @@ export function FinanceExport() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24">
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-1.5">
@@ -299,14 +314,51 @@ export function FinanceExport() {
         </div>
       )}
 
-      {!isLoading && !error && previewData.length === 0 && (
+      {!isLoading && !error && validMembers.length === 0 && (
         <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           Es wurden 0 Mitglieder für diese Periode gefunden. (Möglicherweise
           greifen die Filter für Freisemester, Kündigungen oder fehlende IBANs.)
         </div>
       )}
 
-      {previewData.length > 0 && (
+      {invalidMembers.length > 0 && (
+        <div className="space-y-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <p className="font-semibold">
+            Achtung: Diese Mitglieder haben ungültige Bankdaten und wurden vom Export
+            ausgeschlossen. Bitte manuell kontaktieren.
+          </p>
+          <div className="overflow-x-auto rounded-md border border-red-200 bg-white/80">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>IBAN</TableHead>
+                  <TableHead>BIC</TableHead>
+                  <TableHead>E-Mail</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invalidMembers.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>
+                      {row.firstName} {row.lastName}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {row.iban || "—"}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {row.bic || "—"}
+                    </TableCell>
+                    <TableCell className="text-xs">{row.email || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {validMembers.length > 0 && (
         <div className="space-y-3">
           <div className="rounded-md border bg-card p-2">
             <Table>
@@ -321,7 +373,7 @@ export function FinanceExport() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {previewData.map((row) => (
+                {validMembers.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>{row.firstName}</TableCell>
                     <TableCell>{row.lastName}</TableCell>

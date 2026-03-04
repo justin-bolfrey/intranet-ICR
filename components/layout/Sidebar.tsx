@@ -61,15 +61,24 @@ export function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
   const [hasUnread, setHasUnread] = useState(false);
   const lastReadRef = useRef(profile.letzterNewsAufruf);
+  const lastCheckAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function check() {
       if (pathname === "/news") {
         lastReadRef.current = new Date().toISOString();
+        lastCheckAtRef.current = Date.now();
         if (!cancelled) setHasUnread(false);
         return;
       }
+      const now = Date.now();
+      if (lastCheckAtRef.current && now - lastCheckAtRef.current < 60_000) {
+        // Letzter Check < 60s her – Ergebnis wiederverwenden.
+        return;
+      }
+      lastCheckAtRef.current = now;
+
       const unread = await checkUnreadNews(lastReadRef.current);
       if (!cancelled) setHasUnread(unread);
     }

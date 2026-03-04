@@ -12,7 +12,7 @@ export default async function MagazinesPage() {
             Zeitschriften
           </h1>
           <p className="mt-3 text-base text-muted-foreground md:text-lg">
-            Zugang zu den Zeitschriften des BVH (Bundesverband der Hochschulkommunikatoren).
+          Zugang zu den Zeitschriften des BVH (Capital, FAZ, Stern, Börse Online, Focus und mehr)
           </p>
         </div>
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">

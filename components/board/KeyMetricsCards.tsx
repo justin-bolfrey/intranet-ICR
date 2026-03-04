@@ -18,7 +18,7 @@ export function KeyMetricsCards({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Erwarteter Cashflow
+            Erwarteter Umsatz
           </CardTitle>
         </CardHeader>
         <CardContent>

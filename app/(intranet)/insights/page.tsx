@@ -1,10 +1,31 @@
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import { getCachedAuth } from "@/utils/supabase/cached-auth";
 import { getInsightsData } from "./actions";
 import { KeyMetricsCards } from "@/components/board/KeyMetricsCards";
-import { StatusPieChart } from "@/components/board/StatusPieChart";
-import { DemographicsChart } from "@/components/board/DemographicsChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const StatusPieChart = dynamic(
+  () => import("@/components/board/StatusPieChart").then((m) => m.StatusPieChart),
+  {
+    loading: () => (
+      <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
+        Lade Status-Chart…
+      </div>
+    ),
+  }
+);
+
+const DemographicsChart = dynamic(
+  () => import("@/components/board/DemographicsChart").then((m) => m.DemographicsChart),
+  {
+    loading: () => (
+      <div className="flex h-72 items-center justify-center text-xs text-muted-foreground">
+        Lade Demografie-Chart…
+      </div>
+    ),
+  }
+);
 
 const FEE_PER_MEMBER = 15;
 

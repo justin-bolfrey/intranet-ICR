@@ -25,7 +25,7 @@ export default async function IntranetLayout({
       <Sidebar
         profile={{ vorname, nachname, rolle: rawRole, letzterNewsAufruf }}
       />
-      <main className="h-screen flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
+      <main className="h-screen flex-1 overflow-y-auto p-6 pb-24 md:p-8 md:pb-28 lg:p-10 lg:pb-32">
         <IntranetPageTransition>
           {children}
         </IntranetPageTransition>

@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { sanitizeForSEPA } from "@/lib/sepa";
+import { validateIBAN, validateBICFormat } from "@/lib/iban";
 
 export type Semester = "SoSe" | "WiSe";
 
@@ -16,6 +18,16 @@ export type FinanceMemberRow = {
   amount: number;
 };
 
+export type InvalidFinanceMemberRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  iban: string;
+  bic: string;
+  status: string;
+};
+
 export type FilterStats = {
   total: number;
   noIban: number;
@@ -26,7 +38,8 @@ export type FilterStats = {
 };
 
 export type FinanceExportResult = {
-  rows: FinanceMemberRow[];
+  validMembers: FinanceMemberRow[];
+  invalidMembers: InvalidFinanceMemberRow[];
   stats: FilterStats;
 };
 
@@ -57,14 +70,15 @@ export async function getFinanceExportData(
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select(
-      '"id", "Vorname", "Nachname", "IBAN", "BIC", "Status", "Datum_Kündigung", "Datum_Antrag"'
+      '"id", "Vorname", "Nachname", "IBAN", "BIC", "Status", "Datum_Kündigung", "Datum_Antrag", "E-Mail"'
     );
 
   if (error || !profiles) {
     throw new Error("Fehler beim Laden der Profile aus der Datenbank.");
   }
 
-  const rows: FinanceMemberRow[] = [];
+  const validMembers: FinanceMemberRow[] = [];
+  const invalidMembers: InvalidFinanceMemberRow[] = [];
   const stats = {
     total: profiles.length,
     noIban: 0,
@@ -77,9 +91,9 @@ export async function getFinanceExportData(
   for (const profile of profiles as { [key: string]: unknown }[]) {
     // 1. IBAN Check
     const ibanRaw = profile["IBAN"];
-    const iban =
-      typeof ibanRaw === "string" ? ibanRaw.replace(/\s/g, "") : "";
-    if (!iban) {
+    const ibanClean =
+      typeof ibanRaw === "string" ? ibanRaw.replace(/\s/g, "").toUpperCase() : "";
+    if (!ibanClean) {
       stats.noIban++;
       continue;
     }
@@ -119,13 +133,19 @@ export async function getFinanceExportData(
 
     const firstNameRaw = profile["Vorname"];
     const lastNameRaw = profile["Nachname"];
-    const firstName =
-      typeof firstNameRaw === "string" ? firstNameRaw.trim() : "";
-    const lastName =
-      typeof lastNameRaw === "string" ? lastNameRaw.trim() : "";
+    const firstName = sanitizeForSEPA(
+      typeof firstNameRaw === "string" ? firstNameRaw.trim() : ""
+    );
+    const lastName = sanitizeForSEPA(
+      typeof lastNameRaw === "string" ? lastNameRaw.trim() : ""
+    );
+
+    const emailRaw = profile["E-Mail"];
+    const email =
+      typeof emailRaw === "string" ? emailRaw.trim() : "";
 
     const bicRaw = profile["BIC"];
-    const bic =
+    const bicClean =
       typeof bicRaw === "string" ? bicRaw.replace(/\s/g, "").toUpperCase() : "";
 
     const idValue = (profile as { id?: unknown }).id;
@@ -133,24 +153,38 @@ export async function getFinanceExportData(
 
     const mandateDate = joinedAt ?? new Date().toISOString().slice(0, 10);
     const amount = 15.0;
+    const ibanValid = validateIBAN(ibanClean);
+    const bicValid = !bicClean || validateBICFormat(bicClean);
 
-    rows.push({
-      id,
-      firstName,
-      lastName,
-      iban,
-      bic,
-      status,
-      joinedAt,
-      mandateDate,
-      amount,
-    });
+    if (ibanValid && bicValid) {
+      validMembers.push({
+        id,
+        firstName,
+        lastName,
+        iban: ibanClean,
+        bic: bicClean,
+        status,
+        joinedAt,
+        mandateDate,
+        amount,
+      });
+    } else {
+      invalidMembers.push({
+        id,
+        firstName,
+        lastName,
+        email,
+        iban: ibanClean,
+        bic: bicClean,
+        status,
+      });
+    }
   }
 
-  stats.valid = rows.length;
+  stats.valid = validMembers.length;
   console.log(`--- SEPA EXPORT FILTER STATS (${semester} ${year}) ---`, stats);
 
-  return { rows, stats };
+  return { validMembers, invalidMembers, stats };
 }
 
 export async function getFinanceExportDataAction(
@@ -172,12 +206,12 @@ export async function getFinanceExportDataAction(
   }
 
   try {
-    const { rows } = await getFinanceExportData(semester, yearValue);
+    const { validMembers } = await getFinanceExportData(semester, yearValue);
     return {
       error: "",
       semester,
       year: yearValue,
-      rows,
+      rows: validMembers,
     };
   } catch (err) {
     const message =

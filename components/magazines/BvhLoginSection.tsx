@@ -25,7 +25,7 @@ export function BvhLoginSection({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hasRequested, setHasRequested] = useState(initialRequested);
-  const [handled, setHandled] = useState(initialHandled);
+  const [handled] = useState(initialHandled);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const buttonDisabled = hasRequested;
