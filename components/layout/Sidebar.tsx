@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   BookOpen,
-  Building2,
   Calendar,
   CalendarDays,
   LineChart,
@@ -42,7 +41,6 @@ const NAV_ITEMS: NavItem[] = [
   { name: "Zeitschriften", href: "/magazines", icon: BookOpen, allowedRoles: ["member", "admin", "board"] },
   { name: "Vorstand", href: "/board-members", icon: UsersRound, allowedRoles: ["member", "admin", "board"] },
   { name: "Mitglieder", href: "/members", icon: Users, allowedRoles: ["member", "admin", "board"] },
-  { name: "Departments & Kontakt", href: "/contact", icon: Building2, allowedRoles: ["member", "admin", "board"] },
   { name: "Kalender", href: "/calendar", icon: Calendar, allowedRoles: ["member", "admin", "board"] },
   { name: "Admin Bereich", href: "/admin", icon: Settings, allowedRoles: ["admin", "board"] },
   { name: "Insights", href: "/insights", icon: LineChart, allowedRoles: ["board"] },
