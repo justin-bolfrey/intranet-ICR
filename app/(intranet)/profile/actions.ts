@@ -34,7 +34,46 @@ export async function updateProfile(
   const iban = ibanRaw.replace(/\s/g, "").toUpperCase();
   const bic = bicRaw.replace(/\s/g, "").toUpperCase();
 
-  const { error } = await supabase
+  // Für Updates nutzen wir den Service-Role-Client, um RLS-Probleme zu vermeiden
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Zuerst den passenden Profil-Datensatz auflösen (analog zur Kündigungs-Logik)
+  let { data: profileRow, error: profileLookupError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!profileRow && !profileLookupError) {
+    const fallback = await admin
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    profileRow = fallback.data;
+    profileLookupError = fallback.error;
+  }
+
+  if (profileLookupError) {
+    return {
+      success: false,
+      error: `Fehler beim Laden des Profils: ${profileLookupError.message}`,
+    };
+  }
+
+  const profileId = String((profileRow as { id?: unknown } | null)?.id ?? "").trim();
+  if (!profileId) {
+    return {
+      success: false,
+      error:
+        "Kein passender Profil-Datensatz gefunden. Bitte kontaktiere den Vorstand/Support.",
+    };
+  }
+
+  const { error } = await admin
     .from("profiles")
     .update({
       "Straße": strasse,
@@ -45,7 +84,7 @@ export async function updateProfile(
       IBAN: iban,
       BIC: bic,
     })
-    .eq("user_id", user.id);
+    .eq("id", profileId);
 
   if (error) {
     return { success: false, error: `Fehler beim Speichern: ${error.message}` };

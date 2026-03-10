@@ -157,7 +157,12 @@ export function Sidebar({ profile }: { profile: Profile }) {
       <aside className="hidden h-screen w-64 shrink-0 flex-col border-r bg-background/80 md:sticky md:top-0 md:flex">
         <div className="flex h-full flex-col justify-between px-4 py-4">
           <div className="space-y-6">
-            {renderProfileHead()}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Mein Profil
+              </p>
+              {renderProfileHead()}
+            </div>
             <div className="border-t pt-4">{renderNavLinks()}</div>
           </div>
           <div className="flex flex-col items-center gap-3 border-t pt-4">
@@ -235,7 +240,12 @@ export function Sidebar({ profile }: { profile: Profile }) {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            {renderProfileHead(() => setIsOpen(false))}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Mein Profil
+              </p>
+              {renderProfileHead(() => setIsOpen(false))}
+            </div>
             <div className="border-t pt-3">{renderNavLinks(() => setIsOpen(false))}</div>
           </div>
 
