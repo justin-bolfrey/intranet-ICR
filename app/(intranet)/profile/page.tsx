@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { CancelMembership } from "@/components/profile/CancelMembership";
 import { MyEventsSection } from "@/components/profile/MyEventsSection";
@@ -42,6 +43,21 @@ export default async function ProfilePage() {
       <ProfileForm profile={profileData} />
 
       <MyEventsSection />
+
+      <div className="rounded-lg border bg-card p-4">
+        <h2 className="text-sm font-semibold">Vereinssatzung</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Die aktuelle Vereinssatzung findest du hier als PDF.
+        </p>
+        <Link
+          href="/dokumente/vereinssatzung.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+        >
+          Vereinssatzung ansehen
+        </Link>
+      </div>
 
       {!isCancelled && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-6">
