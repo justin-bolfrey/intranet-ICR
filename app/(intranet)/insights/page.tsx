@@ -71,6 +71,7 @@ export default async function InsightsPage() {
         cashflow={cashflow}
         activeTotal={data.activeTotal}
         newInLast6Months={data.newInLast6Months}
+        cancellationsInLast6Months={data.cancellationsInLast6Months}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">

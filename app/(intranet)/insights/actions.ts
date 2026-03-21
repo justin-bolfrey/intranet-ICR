@@ -22,6 +22,8 @@ export type InsightsData = {
   payingMembersCount: number;
   activeTotal: number;
   newInLast6Months: number;
+  /** Kündigungen mit Status `cancelled` und `Datum_Kündigung` in den letzten 6 Monaten */
+  cancellationsInLast6Months: number;
 };
 
 /** Start of current semester: Oct 1 (Winter) or Apr 1 (Summer). */
@@ -50,7 +52,7 @@ const getInsightsDataCached = unstable_cache(
 
   const { data: rows, error } = await admin
     .from("profiles")
-    .select('"Status", "Datum_Antrag", "Studiengang / Fach"');
+    .select('"Status", "Datum_Antrag", "Datum_Kündigung", "Studiengang / Fach"');
 
   if (error || !rows) return null;
 
@@ -66,6 +68,7 @@ const getInsightsDataCached = unstable_cache(
   const sixMonthsAgo = getSixMonthsAgo();
   let payingCount = 0;
   let newInLast6 = 0;
+  let cancellationsLast6 = 0;
 
   for (const row of rows) {
     const raw = row as Record<string, unknown>;
@@ -95,6 +98,17 @@ const getInsightsDataCached = unstable_cache(
       payingCount++;
     if (datumAntrag && datumAntrag >= sixMonthsAgo) newInLast6++;
 
+    const kuendigungRaw =
+      raw["Datum_Kündigung"] ?? (raw as Record<string, unknown>)["datum_kündigung"];
+    let datumKuendigung: Date | null = null;
+    if (kuendigungRaw) {
+      const k = new Date(String(kuendigungRaw));
+      if (!Number.isNaN(k.getTime())) datumKuendigung = k;
+    }
+    if (status === "cancelled" && datumKuendigung && datumKuendigung >= sixMonthsAgo) {
+      cancellationsLast6++;
+    }
+
     const sg =
       raw["Studiengang / Fach"] ?? (raw as Record<string, unknown>)["Studiengang / Fach"];
     const studiengang = String(sg ?? "")
@@ -113,6 +127,7 @@ const getInsightsDataCached = unstable_cache(
     payingMembersCount: payingCount,
     activeTotal: statusCounts.active,
     newInLast6Months: newInLast6,
+    cancellationsInLast6Months: cancellationsLast6,
   };
   },
   ["insights-data"],

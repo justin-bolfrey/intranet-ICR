@@ -158,8 +158,9 @@ export async function markNewsAsRead(): Promise<void> {
 
   if (updateError) return;
 
-  revalidatePath("/", "layout");
-  revalidatePath("/news");
+  // Kein revalidatePath hier: markNewsAsRead wird u. a. aus der News-Seite (RSC) beim
+  // Rendern aufgerufen – revalidatePath während des Renders ist in Next.js nicht erlaubt.
+  // Aktualisierung der Sidebar: router.refresh() im Client (Sidebar) nach dem Aufruf.
 }
 
 export async function checkUnreadNews(lastReadAt: string | null): Promise<boolean> {
