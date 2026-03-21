@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   BookOpen,
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/app/dashboard/logout-button";
-import { checkUnreadNews } from "@/app/(intranet)/news/actions";
+import { checkUnreadNews, markNewsAsRead } from "@/app/(intranet)/news/actions";
 
 type Profile = {
   vorname: string;
@@ -58,23 +58,45 @@ function getInitials(vorname: string, nachname: string) {
 
 export function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [hasUnread, setHasUnread] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const lastReadRef = useRef(profile.letzterNewsAufruf);
   const lastCheckAtRef = useRef<number | null>(null);
+  const prevPathnameRef = useRef<string | null>(null);
+
+  // Server-Profil (z. B. nach markNewsAsRead + refresh) mit Ref abgleichen
+  useEffect(() => {
+    if (profile.letzterNewsAufruf) {
+      lastReadRef.current = profile.letzterNewsAufruf;
+    }
+  }, [profile.letzterNewsAufruf]);
 
   useEffect(() => {
     let cancelled = false;
+    const prev = prevPathnameRef.current;
+    prevPathnameRef.current = pathname;
+
     async function check() {
       if (pathname === "/news") {
-        lastReadRef.current = new Date().toISOString();
+        await markNewsAsRead();
+        const nowIso = new Date().toISOString();
+        lastReadRef.current = nowIso;
         lastCheckAtRef.current = Date.now();
         if (!cancelled) setHasUnread(false);
+        // Layout/Profil neu laden, damit der Zeitstempel nicht nur clientseitig existiert
+        router.refresh();
         return;
       }
+
+      // Nach Verlassen von /news nicht durch 60s-Throttle blockieren – sonst bleibt der rote Punkt hängen
+      const leftNews = prev === "/news" && pathname !== "/news";
       const now = Date.now();
-      if (lastCheckAtRef.current && now - lastCheckAtRef.current < 60_000) {
-        // Letzter Check < 60s her – Ergebnis wiederverwenden.
+      if (
+        !leftNews &&
+        lastCheckAtRef.current &&
+        now - lastCheckAtRef.current < 60_000
+      ) {
         return;
       }
       lastCheckAtRef.current = now;
@@ -84,7 +106,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
     }
     check();
     return () => { cancelled = true; };
-  }, [pathname]);
+  }, [pathname, router]);
 
   useEffect(() => {
     if (!isOpen) return;

@@ -121,10 +121,45 @@ export async function markNewsAsRead(): Promise<void> {
 
   if (!user) return;
 
-  await supabase
+  const readAt = new Date().toISOString();
+
+  // Wie bei anderen Profil-Updates: Service-Role nutzen, damit das Update nicht
+  // still an RLS scheitert (Sidebar bekam sonst weiter den alten Zeitstempel).
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  let { data: profileRow, error: lookupError } = await admin
     .from("profiles")
-    .update({ letzter_news_aufruf: new Date().toISOString() })
-    .eq("user_id", user.id);
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!profileRow && !lookupError) {
+    const fallback = await admin
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    profileRow = fallback.data;
+    lookupError = fallback.error;
+  }
+
+  if (lookupError || !profileRow) return;
+
+  const profileId = String((profileRow as { id?: unknown }).id ?? "").trim();
+  if (!profileId) return;
+
+  const { error: updateError } = await admin
+    .from("profiles")
+    .update({ letzter_news_aufruf: readAt })
+    .eq("id", profileId);
+
+  if (updateError) return;
+
+  revalidatePath("/", "layout");
+  revalidatePath("/news");
 }
 
 export async function checkUnreadNews(lastReadAt: string | null): Promise<boolean> {
