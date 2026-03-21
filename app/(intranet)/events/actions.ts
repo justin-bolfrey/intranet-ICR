@@ -115,21 +115,44 @@ export async function createEvent(
   if (role !== "admin" && role !== "board")
     return { id: null, error: "Keine Berechtigung." };
 
-  const { data: row, error } = await supabase
+  const baseRow = {
+    title: data.title.trim(),
+    description: data.description.trim() || null,
+    event_date: data.event_date,
+    event_time: data.event_time.trim() || null,
+    location: data.location.trim() || null,
+    organizer: data.organizer.trim() || null,
+    image_url: data.image_url || null,
+    requires_registration: !!data.requires_registration,
+  };
+
+  const endTimeTrimmed = data.end_time?.trim() || null;
+
+  // Spalte end_time existiert ggf. noch nicht in Supabase → erst mit Endzeit versuchen,
+  // bei Schema-Fehler ohne end_time erneut (siehe supabase/sql/add_events_end_time.sql).
+  let { data: row, error } = await supabase
     .from("events")
     .insert({
-      title: data.title.trim(),
-      description: data.description.trim() || null,
-      event_date: data.event_date,
-      event_time: data.event_time.trim() || null,
-      end_time: data.end_time?.trim() || null,
-      location: data.location.trim() || null,
-      organizer: data.organizer.trim() || null,
-      image_url: data.image_url || null,
-      requires_registration: !!data.requires_registration,
+      ...baseRow,
+      ...(endTimeTrimmed ? { end_time: endTimeTrimmed } : {}),
     })
     .select("id")
     .single();
+
+  if (
+    error &&
+    endTimeTrimmed &&
+    typeof error.message === "string" &&
+    error.message.includes("end_time")
+  ) {
+    const retry = await supabase
+      .from("events")
+      .insert(baseRow)
+      .select("id")
+      .single();
+    row = retry.data;
+    error = retry.error;
+  }
 
   if (error) return { id: null, error: error.message };
   revalidatePath("/events");
