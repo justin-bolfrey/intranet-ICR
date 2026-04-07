@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -16,16 +16,26 @@ const ROLE_LABELS: Record<string, string> = {
   member: "Mitglied",
   admin: "Admin",
   board: "Vorstand",
+  cancelled: "Ausgetreten",
 };
+
+function selectValueForMember(m: AdminMemberRow): string {
+  if (m.status === "cancelled") return "cancelled";
+  return m.rolle || "member";
+}
 
 type Props = {
   member: AdminMemberRow;
 };
 
 export function MemberRoleSelect({ member }: Props) {
-  const [value, setValue] = useState(member.rolle);
+  const [value, setValue] = useState(() => selectValueForMember(member));
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setValue(selectValueForMember(member));
+  }, [member.id, member.status, member.rolle]);
 
   async function handleChange(newRole: string) {
     setLoading(true);
@@ -47,13 +57,14 @@ export function MemberRoleSelect({ member }: Props) {
       onValueChange={handleChange}
       disabled={loading}
     >
-      <SelectTrigger className="w-[130px]" size="sm">
+      <SelectTrigger className="w-[160px]" size="sm">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="member">{ROLE_LABELS.member}</SelectItem>
         <SelectItem value="admin">{ROLE_LABELS.admin}</SelectItem>
         <SelectItem value="board">{ROLE_LABELS.board}</SelectItem>
+        <SelectItem value="cancelled">{ROLE_LABELS.cancelled}</SelectItem>
       </SelectContent>
     </Select>
   );

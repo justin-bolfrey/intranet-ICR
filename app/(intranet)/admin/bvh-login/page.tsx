@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getBvhLoginRequests } from "@/app/(intranet)/magazines/actions";
 import { BvhLoginRequestsTable } from "@/components/admin/BvhLoginRequestsTable";
+import { BvhCsvDownloadButton } from "@/components/admin/BvhCsvDownloadButton";
 
 export default async function AdminBvhLoginPage() {
   const requests = await getBvhLoginRequests();
+  const unhandledCount = requests.filter((r) => !r.handled).length;
 
   return (
     <div className="space-y-6">
@@ -25,8 +27,9 @@ export default async function AdminBvhLoginPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle>Anfragen</CardTitle>
+          <BvhCsvDownloadButton unhandledCount={unhandledCount} />
         </CardHeader>
         <CardContent>
           <BvhLoginRequestsTable requests={requests} />

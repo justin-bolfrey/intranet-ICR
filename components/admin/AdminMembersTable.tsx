@@ -45,7 +45,11 @@ export function AdminMembersTable({ members, canEditRole }: Props) {
               {canEditRole ? (
                 <MemberRoleSelect member={member} />
               ) : (
-                <span>{ROLE_LABELS[member.rolle] ?? member.rolle}</span>
+                <span>
+                  {member.status === "cancelled"
+                    ? "Ausgetreten"
+                    : ROLE_LABELS[member.rolle] ?? member.rolle}
+                </span>
               )}
             </TableCell>
           </TableRow>

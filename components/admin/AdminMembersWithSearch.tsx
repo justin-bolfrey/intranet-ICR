@@ -12,6 +12,7 @@ const ROLE_FILTER_OPTIONS = [
   { value: "member", label: "Mitglied" },
   { value: "admin", label: "Admin" },
   { value: "board", label: "Vorstand" },
+  { value: "cancelled", label: "Ausgetreten" },
 ];
 
 type Props = {
@@ -27,7 +28,15 @@ export function AdminMembersWithSearch({ members, canEditRole }: Props) {
     let list = members;
     const q = query.trim().toLowerCase();
     if (q) list = list.filter((m) => m.name.toLowerCase().includes(q));
-    if (roleFilter && roleFilter !== "all") list = list.filter((m) => m.rolle === roleFilter);
+    if (roleFilter && roleFilter !== "all") {
+      if (roleFilter === "cancelled") {
+        list = list.filter((m) => m.status === "cancelled");
+      } else {
+        list = list.filter(
+          (m) => m.rolle === roleFilter && m.status !== "cancelled"
+        );
+      }
+    }
     return list;
   }, [members, query, roleFilter]);
 

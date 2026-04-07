@@ -11,6 +11,8 @@ export type AdminMemberRow = {
   email: string;
   handynummer: string;
   rolle: string;
+  /** Kleinbuchstaben, z. B. active | cancelled | applicant | alumni */
+  status: string;
 };
 
 export async function getAdminMembers(): Promise<AdminMemberRow[]> {
@@ -27,7 +29,9 @@ export async function getAdminMembers(): Promise<AdminMemberRow[]> {
 
   const { data, error } = await admin
     .from("profiles")
-    .select('id, Vorname, Nachname, "Studiengang / Fach", "E-Mail", Handynummer, Rolle')
+    .select(
+      'id, Vorname, Nachname, "Studiengang / Fach", "E-Mail", Handynummer, Rolle, Status'
+    )
     .order("Nachname", { ascending: true })
     .order("Vorname", { ascending: true });
 
@@ -42,6 +46,7 @@ export async function getAdminMembers(): Promise<AdminMemberRow[]> {
     const em = raw["E-Mail"] ?? (raw as Record<string, unknown>)["e-mail"];
     const hn = raw.Handynummer ?? raw.handynummer;
     const rl = raw.Rolle ?? raw.rolle;
+    const st = raw.Status ?? raw.status;
     return {
       id: String(raw.id ?? ""),
       name,
@@ -49,9 +54,13 @@ export async function getAdminMembers(): Promise<AdminMemberRow[]> {
       email: String(em ?? "").trim(),
       handynummer: String(hn ?? "").trim(),
       rolle: String(rl ?? "member").trim().toLowerCase(),
+      status: String(st ?? "active").trim().toLowerCase(),
     };
   });
 }
+
+/** UI-Wert „ausgetreten“ – kein ENUM-Wert in Rolle, setzt Status + Datum_Kündigung */
+const CANCELLED_UI = "cancelled";
 
 export async function updateMemberRole(
   profileId: string,
@@ -63,21 +72,42 @@ export async function updateMemberRole(
   const role = ((profile?.["Rolle"] as string) ?? "member").trim().toLowerCase();
   if (role !== "board") return { error: "Nur Vorstand (board) darf Rollen ändern." };
 
-  const allowed = ["member", "admin", "board"];
   const roleValue = newRole.trim().toLowerCase();
-  if (!allowed.includes(roleValue)) return { error: "Ungültige Rolle." };
+  const allowedRoles = ["member", "admin", "board"];
+  if (roleValue !== CANCELLED_UI && !allowedRoles.includes(roleValue)) {
+    return { error: "Ungültige Auswahl." };
+  }
 
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { error } = await admin
-    .from("profiles")
-    .update({ Rolle: roleValue })
-    .eq("id", profileId);
+  const today = new Date().toISOString().slice(0, 10);
 
-  if (error) return { error: error.message };
+  if (roleValue === CANCELLED_UI) {
+    const { error } = await admin
+      .from("profiles")
+      .update({
+        Status: "cancelled",
+        Datum_Kündigung: today,
+        Rolle: "member",
+      })
+      .eq("id", profileId);
+
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await admin
+      .from("profiles")
+      .update({
+        Rolle: roleValue,
+        Status: "active",
+        Datum_Kündigung: null,
+      })
+      .eq("id", profileId);
+
+    if (error) return { error: error.message };
+  }
 
   revalidatePath("/admin/members");
   revalidatePath("/admin");
