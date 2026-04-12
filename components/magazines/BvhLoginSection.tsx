@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { requestBvhLogin } from "@/app/(intranet)/magazines/actions";
 
-const BVH_LOGIN_URL = "https://bvh.org/users/login.php?dest=mitglieder/";
+const BVH_LOGIN_URL =
+  "https://bvhev.ciamlogin.com/30e45d3e-e384-4d3c-ae5c-00810ddc692f/oauth2/v2.0/authorize?client_id=5130d735-c612-4907-a371-41687b298f50&response_type=code&redirect_uri=https%3A%2F%2Fbvh.org%2Fassets%2Fauth_external%2Fcallback.php&scope=openid+profile+email&state=d302184aff68bb60e7caafa819f980ea&nonce=34bbb217702495aee6ff9d6219a752ba&code_challenge=6cV_m-h3EUVy6pR5KC3XWi5JBrpF8uUKtiBFa3ciRsA&code_challenge_method=S256&prompt=login";
 
 type Props = { hasAlreadyRequested: boolean; handled?: boolean };
 
