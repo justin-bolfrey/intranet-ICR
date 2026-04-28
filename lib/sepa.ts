@@ -22,3 +22,37 @@ export function sanitizeForSEPA(text: string | null | undefined): string {
   return sanitized.replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Strikte Namensbereinigung für bankseitig sensible Felder.
+ * Entfernt zusätzlich Bindestriche und Apostrophe.
+ */
+export function sanitizeNameForBank(text: string | null | undefined): string {
+  return sanitizeForSEPA(text).replace(/[-']/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Erzeugt konservative Kennungen (A-Z, 0-9) mit fixer Maximallänge.
+ */
+export function buildSepaIdentifier(
+  text: string | null | undefined,
+  maxLength = 35
+): string {
+  const safe = sanitizeForSEPA(text)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  return safe.slice(0, maxLength);
+}
+
+/**
+ * Escaped XML-Sonderzeichen in dynamischen Inhalten.
+ */
+export function escapeXml(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
