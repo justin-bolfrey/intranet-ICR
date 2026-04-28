@@ -22,18 +22,12 @@ import {
 } from "@/app/(intranet)/admin/actions/finance";
 import {
   buildSepaIdentifier,
+  buildNumericIdentifier,
   escapeXml,
   sanitizeNameForBank,
 } from "@/lib/sepa";
 
 const MIN_YEAR = 2000;
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-type ExportWarningRow = {
-  id: string;
-  displayName: string;
-  issues: string[];
-};
 
 function getMaxYear() {
   return new Date().getFullYear() + 1;
@@ -48,58 +42,6 @@ function getPeriodLabel(semester: Semester, year: number): string {
   return `SS${yy}`;
 }
 
-function getExportWarnings(rows: FinanceMemberRow[]): ExportWarningRow[] {
-  return rows
-    .map((row) => {
-      const issues: string[] = [];
-      const originalName = `${row.firstName} ${row.lastName}`.trim();
-      const sanitizedName = sanitizeNameForBank(originalName);
-
-      if (!sanitizedName) {
-        issues.push("Name wird nach Bereinigung leer.");
-      }
-      if (sanitizedName !== originalName) {
-        issues.push("Name wurde für Bankformat verändert (z. B. Bindestrich/Sonderzeichen).");
-      }
-      if (sanitizedName.length > 70) {
-        issues.push("Name ist sehr lang (>70 Zeichen).");
-      }
-
-      const normalizedMandateId = buildSepaIdentifier(row.id, 35);
-      if (!normalizedMandateId) {
-        issues.push("Mandatsreferenz ist leer nach Normalisierung.");
-      }
-      if (row.id !== normalizedMandateId) {
-        issues.push("Mandatsreferenz wurde gekürzt/normalisiert.");
-      }
-      if (row.id.length > 35) {
-        issues.push("Mandatsreferenz war länger als 35 Zeichen.");
-      }
-
-      if (!row.bic) {
-        issues.push("BIC fehlt (kann je nach Bank problematisch sein).");
-      } else {
-        const normalizedBic = buildSepaIdentifier(row.bic, 11);
-        if (normalizedBic !== row.bic) {
-          issues.push("BIC wurde normalisiert.");
-        }
-      }
-
-      if (!row.mandateDate) {
-        issues.push("Mandatsdatum fehlt (Export nutzt Tagesdatum als Fallback).");
-      } else if (!ISO_DATE_REGEX.test(row.mandateDate)) {
-        issues.push("Mandatsdatum ist nicht im Format YYYY-MM-DD.");
-      }
-
-      return {
-        id: row.id,
-        displayName: originalName || row.id,
-        issues,
-      };
-    })
-    .filter((row) => row.issues.length > 0);
-}
-
 export function FinanceExport() {
   const currentYear = new Date().getFullYear();
   const [semester, setSemester] = useState<Semester>("SoSe");
@@ -110,7 +52,6 @@ export function FinanceExport() {
   const [stats, setStats] = useState<FilterStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const exportWarnings = getExportWarnings(validMembers);
 
   const handleLoadPreview = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -144,7 +85,8 @@ export function FinanceExport() {
     const lines = validMembers.map((row) => {
       const name = `${row.firstName} ${row.lastName}`.trim();
       const amount = row.amount.toFixed(2).replace(".", ",");
-      return [name, row.iban, row.bic, amount, row.id].join(";");
+      const mandateId = buildNumericIdentifier(row.id, 35);
+      return [name, row.iban, row.bic, amount, mandateId].join(";");
     });
     const csv = [header, ...lines].join("\n");
 
@@ -185,11 +127,25 @@ export function FinanceExport() {
         const nameRaw = `${row.firstName} ${row.lastName}`.trim();
         const name = sanitizeNameForBank(nameRaw) || "MITGLIED";
         const amount = row.amount.toFixed(2);
-        const mndtId = buildSepaIdentifier(row.id, 35) || `MANDAT${idx + 1}`;
+        const mndtId =
+          buildNumericIdentifier(row.id, 35) || String(idx + 1).padStart(6, "0");
         const endToEndId =
           buildSepaIdentifier(`${messageId}${idx + 1}`, 35) || `E2E${idx + 1}`;
         const dtOfSgntr = row.mandateDate ?? today;
         const bic = buildSepaIdentifier(row.bic, 11);
+        const dbtrAgtXml = bic
+          ? `<DbtrAgt>
+          <FinInstnId>
+            <BIC>${escapeXml(bic)}</BIC>
+          </FinInstnId>
+        </DbtrAgt>`
+          : `<DbtrAgt>
+          <FinInstnId>
+            <Othr>
+              <Id>NOTPROVIDED</Id>
+            </Othr>
+          </FinInstnId>
+        </DbtrAgt>`;
 
         return `
       <DrctDbtTxInf>
@@ -203,15 +159,7 @@ export function FinanceExport() {
             <DtOfSgntr>${dtOfSgntr}</DtOfSgntr>
           </MndtRltdInf>
         </DrctDbtTx>
-        ${
-          bic
-            ? `<DbtrAgt>
-          <FinInstnId>
-            <BIC>${escapeXml(bic)}</BIC>
-          </FinInstnId>
-        </DbtrAgt>`
-            : ""
-        }
+        ${dbtrAgtXml}
         <Dbtr>
           <Nm>${escapeXml(name)}</Nm>
         </Dbtr>
@@ -264,11 +212,15 @@ export function FinanceExport() {
           <BIC>${escapeXml(creditorBic)}</BIC>
         </FinInstnId>
       </CdtrAgt>
+      <ChrgBr>SLEV</ChrgBr>
       <CdtrSchmeId>
         <Id>
           <PrvtId>
             <Othr>
               <Id>${escapeXml(creditorId)}</Id>
+              <SchmeNm>
+                <Prtry>SEPA</Prtry>
+              </SchmeNm>
             </Othr>
           </PrvtId>
         </Id>
@@ -471,36 +423,6 @@ export function FinanceExport() {
               </TableBody>
             </Table>
           </div>
-          {exportWarnings.length > 0 && (
-            <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              <p className="font-semibold">
-                Vorab-Prüfung: {exportWarnings.length} Datensätze mit potenziellen Bank-Risiken
-              </p>
-              <p className="text-xs text-amber-800">
-                Der Export bleibt möglich, aber bitte diese Einträge prüfen.
-              </p>
-              <div className="overflow-x-auto rounded-md border border-amber-200 bg-white/90">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Mandatsreferenz</TableHead>
-                      <TableHead>Hinweise</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {exportWarnings.map((row) => (
-                      <TableRow key={`warning-${row.id}`}>
-                        <TableCell>{row.displayName}</TableCell>
-                        <TableCell className="font-mono text-xs">{row.id}</TableCell>
-                        <TableCell className="text-xs">{row.issues.join(" | ")}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleExportCsv}>
               Als CSV exportieren

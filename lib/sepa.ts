@@ -44,6 +44,17 @@ export function buildSepaIdentifier(
 }
 
 /**
+ * Erzeugt rein numerische Kennungen mit fixer Maximallänge.
+ */
+export function buildNumericIdentifier(
+  text: string | null | undefined,
+  maxLength = 35
+): string {
+  const safe = (text ?? "").replace(/\D/g, "");
+  return safe.slice(0, maxLength);
+}
+
+/**
  * Escaped XML-Sonderzeichen in dynamischen Inhalten.
  */
 export function escapeXml(text: string | null | undefined): string {
