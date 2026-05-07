@@ -319,11 +319,12 @@ export function FinanceExport() {
       </div>
 
       {stats && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-7">
           {[
             { label: "Gesamt", value: stats.total, color: "text-foreground" },
             { label: "Gültig", value: stats.valid, color: "text-green-600" },
             { label: "Ohne IBAN", value: stats.noIban, color: "text-amber-600" },
+            { label: "Alumni", value: stats.alumni, color: "text-blue-600" },
             { label: "Bewerber", value: stats.applicant, color: "text-amber-600" },
             { label: "Gekündigt", value: stats.cancelled, color: "text-red-600" },
             { label: "Freisemester", value: stats.freeSemester, color: "text-blue-600" },
@@ -344,7 +345,7 @@ export function FinanceExport() {
       {!isLoading && !error && validMembers.length === 0 && (
         <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           Es wurden 0 Mitglieder für diese Periode gefunden. (Möglicherweise
-          greifen die Filter für Freisemester, Kündigungen oder fehlende IBANs.)
+          greifen die Filter für Alumni, Freisemester, Kündigungen oder fehlende IBANs.)
         </div>
       )}
 

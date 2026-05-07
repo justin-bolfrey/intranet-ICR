@@ -52,7 +52,7 @@ const getInsightsDataCached = unstable_cache(
 
   const { data: rows, error } = await admin
     .from("profiles")
-    .select('"Status", "Datum_Antrag", "Datum_Kündigung", "Studiengang / Fach"');
+    .select('"Status", "Rolle", "Datum_Antrag", "Datum_Kündigung", "Studiengang / Fach"');
 
   if (error || !rows) return null;
 
@@ -75,16 +75,19 @@ const getInsightsDataCached = unstable_cache(
     const status = String(raw.Status ?? raw.status ?? "")
       .trim()
       .toLowerCase();
-    const statusKey =
-      status === "active"
+    const role = String(raw.Rolle ?? raw.rolle ?? "")
+      .trim()
+      .toLowerCase();
+    const isAlumni = role === "alumni" || status === "alumni";
+    const statusKey = isAlumni
+      ? "alumni"
+      : status === "active"
         ? "active"
-        : status === "alumni"
-          ? "alumni"
-          : status === "applicant"
-            ? "applicant"
-            : status === "cancelled"
-              ? "cancelled"
-              : null;
+        : status === "applicant"
+          ? "applicant"
+          : status === "cancelled"
+            ? "cancelled"
+            : null;
     if (statusKey) statusCounts[statusKey]++;
 
     const datumRaw = raw["Datum_Antrag"] ?? (raw as Record<string, unknown>)["datum_antrag"];
@@ -94,7 +97,7 @@ const getInsightsDataCached = unstable_cache(
       if (!Number.isNaN(d.getTime())) datumAntrag = d;
     }
 
-    if (status === "active" && datumAntrag && datumAntrag < semesterStart)
+    if (status === "active" && !isAlumni && datumAntrag && datumAntrag < semesterStart)
       payingCount++;
     if (datumAntrag && datumAntrag >= sixMonthsAgo) newInLast6++;
 

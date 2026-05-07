@@ -21,7 +21,7 @@ export default async function AdminMembersPage() {
         <div>
           <h1 className="text-2xl font-semibold">Mitglieder</h1>
           <p className="text-sm text-muted-foreground">
-            Alle Mitglieder mit Name, Studiengang, E-Mail, Handynummer und Rolle. Nur Vorstand (board) kann Rollen bearbeiten.
+            Alle Mitglieder mit Name, Studiengang, E-Mail, Handynummer, Rolle und Status. Nur Vorstand (board) kann Rollen und Status bearbeiten.
           </p>
         </div>
       </div>

@@ -31,6 +31,7 @@ export type InvalidFinanceMemberRow = {
 export type FilterStats = {
   total: number;
   noIban: number;
+  alumni: number;
   applicant: number;
   cancelled: number;
   freeSemester: number;
@@ -70,7 +71,7 @@ export async function getFinanceExportData(
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select(
-      '"id", "Vorname", "Nachname", "IBAN", "BIC", "Status", "Datum_Kündigung", "Datum_Antrag", "E-Mail"'
+      '"id", "Vorname", "Nachname", "IBAN", "BIC", "Status", "Rolle", "Datum_Kündigung", "Datum_Antrag", "E-Mail"'
     );
 
   if (error || !profiles) {
@@ -82,6 +83,7 @@ export async function getFinanceExportData(
   const stats = {
     total: profiles.length,
     noIban: 0,
+    alumni: 0,
     applicant: 0,
     cancelled: 0,
     freeSemester: 0,
@@ -89,21 +91,28 @@ export async function getFinanceExportData(
   };
 
   for (const profile of profiles as { [key: string]: unknown }[]) {
-    // 1. IBAN Check
+    // 1. Status Check
+    const statusRaw = profile["Status"];
+    const status =
+      typeof statusRaw === "string" ? statusRaw.trim().toLowerCase() : "";
+    const roleRaw = profile["Rolle"];
+    const role =
+      typeof roleRaw === "string" ? roleRaw.trim().toLowerCase() : "";
+    if (role === "alumni" || status === "alumni") {
+      stats.alumni++;
+      continue;
+    }
+    if (status === "applicant") {
+      stats.applicant++;
+      continue;
+    }
+
+    // 2. IBAN Check
     const ibanRaw = profile["IBAN"];
     const ibanClean =
       typeof ibanRaw === "string" ? ibanRaw.replace(/\s/g, "").toUpperCase() : "";
     if (!ibanClean) {
       stats.noIban++;
-      continue;
-    }
-
-    // 2. Status Check
-    const statusRaw = profile["Status"];
-    const status =
-      typeof statusRaw === "string" ? statusRaw.trim().toLowerCase() : "";
-    if (status === "applicant") {
-      stats.applicant++;
       continue;
     }
 

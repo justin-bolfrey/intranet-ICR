@@ -36,12 +36,12 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { name: "News", href: "/news", icon: Bell, allowedRoles: ["member", "admin", "board"] },
-  { name: "Events", href: "/events", icon: CalendarDays, allowedRoles: ["member", "admin", "board"] },
-  { name: "Zeitschriften", href: "/magazines", icon: BookOpen, allowedRoles: ["member", "admin", "board"] },
-  { name: "Vorstand", href: "/board-members", icon: UsersRound, allowedRoles: ["member", "admin", "board"] },
-  { name: "Mitglieder", href: "/members", icon: Users, allowedRoles: ["member", "admin", "board"] },
-  { name: "Kalender", href: "/calendar", icon: Calendar, allowedRoles: ["member", "admin", "board"] },
+  { name: "News", href: "/news", icon: Bell, allowedRoles: ["member", "admin", "board", "alumni"] },
+  { name: "Events", href: "/events", icon: CalendarDays, allowedRoles: ["member", "admin", "board", "alumni"] },
+  { name: "Zeitschriften", href: "/magazines", icon: BookOpen, allowedRoles: ["member", "admin", "board", "alumni"] },
+  { name: "Vorstand", href: "/board-members", icon: UsersRound, allowedRoles: ["member", "admin", "board", "alumni"] },
+  { name: "Mitglieder", href: "/members", icon: Users, allowedRoles: ["member", "admin", "board", "alumni"] },
+  { name: "Kalender", href: "/calendar", icon: Calendar, allowedRoles: ["member", "admin", "board", "alumni"] },
   { name: "Admin Bereich", href: "/admin", icon: Settings, allowedRoles: ["admin", "board"] },
   { name: "Insights", href: "/insights", icon: LineChart, allowedRoles: ["board"] },
 ];
@@ -50,6 +50,7 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   board: "Vorstand",
   member: "Mitglied",
+  alumni: "Alumni",
 };
 
 function getInitials(vorname: string, nachname: string) {

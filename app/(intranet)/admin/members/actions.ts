@@ -11,7 +11,7 @@ export type AdminMemberRow = {
   email: string;
   handynummer: string;
   rolle: string;
-  /** Kleinbuchstaben, z. B. active | cancelled | applicant | alumni */
+  /** Kleinbuchstaben, z. B. active | cancelled | applicant */
   status: string;
 };
 
@@ -59,7 +59,7 @@ export async function getAdminMembers(): Promise<AdminMemberRow[]> {
   });
 }
 
-/** UI-Wert „ausgetreten“ – kein ENUM-Wert in Rolle, setzt Status + Datum_Kündigung */
+/** UI-Wert fuer "ausgetreten" - kein Rollenwert, setzt Status + Datum_Kündigung. */
 const CANCELLED_UI = "cancelled";
 
 export async function updateMemberRole(
@@ -73,7 +73,7 @@ export async function updateMemberRole(
   if (role !== "board") return { error: "Nur Vorstand (board) darf Rollen ändern." };
 
   const roleValue = newRole.trim().toLowerCase();
-  const allowedRoles = ["member", "admin", "board"];
+  const allowedRoles = ["member", "admin", "board", "alumni"];
   if (roleValue !== CANCELLED_UI && !allowedRoles.includes(roleValue)) {
     return { error: "Ungültige Auswahl." };
   }

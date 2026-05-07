@@ -15,6 +15,8 @@ const ROLE_LABELS: Record<string, string> = {
   member: "Mitglied",
   admin: "Admin",
   board: "Vorstand",
+  alumni: "Alumni",
+  cancelled: "Ausgetreten",
 };
 
 type Props = {
@@ -31,7 +33,7 @@ export function AdminMembersTable({ members, canEditRole }: Props) {
           <TableHead>Studiengang</TableHead>
           <TableHead>E-Mail</TableHead>
           <TableHead>Handynummer</TableHead>
-          <TableHead>Rolle</TableHead>
+          <TableHead>Rolle/Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -47,7 +49,7 @@ export function AdminMembersTable({ members, canEditRole }: Props) {
               ) : (
                 <span>
                   {member.status === "cancelled"
-                    ? "Ausgetreten"
+                    ? ROLE_LABELS.cancelled
                     : ROLE_LABELS[member.rolle] ?? member.rolle}
                 </span>
               )}

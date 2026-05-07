@@ -16,12 +16,18 @@ const ROLE_LABELS: Record<string, string> = {
   member: "Mitglied",
   admin: "Admin",
   board: "Vorstand",
+  alumni: "Alumni",
   cancelled: "Ausgetreten",
 };
 
 function selectValueForMember(m: AdminMemberRow): string {
   if (m.status === "cancelled") return "cancelled";
   return m.rolle || "member";
+}
+
+function selectValueForStatus(status: string, rolle: string): string {
+  if (status === "cancelled") return "cancelled";
+  return rolle || "member";
 }
 
 type Props = {
@@ -32,10 +38,11 @@ export function MemberRoleSelect({ member }: Props) {
   const [value, setValue] = useState(() => selectValueForMember(member));
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { id, status, rolle } = member;
 
   useEffect(() => {
-    setValue(selectValueForMember(member));
-  }, [member.id, member.status, member.rolle]);
+    setValue(selectValueForStatus(status, rolle));
+  }, [id, status, rolle]);
 
   async function handleChange(newRole: string) {
     setLoading(true);
@@ -64,6 +71,7 @@ export function MemberRoleSelect({ member }: Props) {
         <SelectItem value="member">{ROLE_LABELS.member}</SelectItem>
         <SelectItem value="admin">{ROLE_LABELS.admin}</SelectItem>
         <SelectItem value="board">{ROLE_LABELS.board}</SelectItem>
+        <SelectItem value="alumni">{ROLE_LABELS.alumni}</SelectItem>
         <SelectItem value="cancelled">{ROLE_LABELS.cancelled}</SelectItem>
       </SelectContent>
     </Select>

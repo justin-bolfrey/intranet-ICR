@@ -38,6 +38,7 @@ type ProfileData = {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
+  alumni: "Alumni",
   board: "Vorstand",
   member: "Mitglied",
 };

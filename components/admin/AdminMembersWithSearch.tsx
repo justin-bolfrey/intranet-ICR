@@ -8,10 +8,11 @@ import { AdminMembersTable } from "./AdminMembersTable";
 import type { AdminMemberRow } from "@/app/(intranet)/admin/members/actions";
 
 const ROLE_FILTER_OPTIONS = [
-  { value: "all", label: "Alle Rollen" },
+  { value: "all", label: "Alle Rollen/Status" },
   { value: "member", label: "Mitglied" },
   { value: "admin", label: "Admin" },
   { value: "board", label: "Vorstand" },
+  { value: "alumni", label: "Alumni" },
   { value: "cancelled", label: "Ausgetreten" },
 ];
 
@@ -61,7 +62,7 @@ export function AdminMembersWithSearch({ members, canEditRole }: Props) {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <label htmlFor="admin-role-filter" className="text-sm text-muted-foreground whitespace-nowrap">
-              Rolle:
+              Rolle/Status:
             </label>
             <select
               id="admin-role-filter"
