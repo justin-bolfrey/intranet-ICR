@@ -74,12 +74,12 @@ export async function middleware(request: NextRequest) {
   // 5. Die strikten Regeln (Kein Ping-Pong mehr)
   if (isAuthRoute && user) {
     // Eingeloggt, aber will zum Login? Ab ins Dashboard.
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return redirectWithSupabaseCookies("/dashboard");
   }
 
   if (isProtectedRoute && !user) {
     // Nicht eingeloggt, will aber ins Dashboard/Admin? Ab zum Login.
-    return NextResponse.redirect(new URL("/login", request.url));
+    return redirectWithSupabaseCookies("/login");
   }
 
   // Alles in Ordnung, lass ihn passieren

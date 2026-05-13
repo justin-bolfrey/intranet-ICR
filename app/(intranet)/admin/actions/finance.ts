@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { getCachedAuth } from "@/utils/supabase/cached-auth";
 import { sanitizeForSEPA } from "@/lib/sepa";
 import { validateIBAN, validateBICFormat } from "@/lib/iban";
 
@@ -62,6 +63,16 @@ export async function getFinanceExportData(
   semester: Semester,
   year: number
 ): Promise<FinanceExportResult> {
+  const { user, profile } = await getCachedAuth();
+  if (!user) {
+    throw new Error("Nicht eingeloggt.");
+  }
+
+  const role = ((profile?.["Rolle"] as string) ?? "member").trim().toLowerCase();
+  if (role !== "admin" && role !== "board") {
+    throw new Error("Keine Berechtigung für den Finanzexport.");
+  }
+
   const supabase = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

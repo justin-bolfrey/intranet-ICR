@@ -120,12 +120,22 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
+    let timeoutId: number | undefined;
+
     if (state.success) {
       toast.success("Profil erfolgreich gespeichert.");
-      setEditing(false);
+      timeoutId = window.setTimeout(() => {
+        setEditing(false);
+      }, 0);
     } else if (state.error) {
       toast.error(state.error);
     }
+
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, [state]);
 
   const roleLabel = ROLE_LABELS[profile.rolle] ?? profile.rolle;

@@ -6,11 +6,20 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { registerAction, type RegisterSavedState } from "./actions";
+import {
+  registerAction,
+  type RegisterActionState,
+  type RegisterSavedState,
+} from "./actions";
 import { countryCodes } from "@/lib/country-codes";
 import { IbanBicFields } from "./iban-bic-fields";
 
-const initialState = { error: "", redirect: undefined as string | undefined, saved: undefined as RegisterSavedState | undefined };
+const initialState: RegisterActionState = {
+  error: "",
+  redirect: undefined,
+  saved: undefined,
+  confirmationMessage: undefined,
+};
 
 const DEFAULT_FORM: RegisterSavedState = {
   vorname: "",
@@ -37,6 +46,8 @@ export function RegisterForm() {
   const router = useRouter();
   const [state, formAction] = useActionState(registerAction, initialState);
   const [formValues, setFormValues] = useState<RegisterSavedState>(DEFAULT_FORM);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+  const isDevelopment = process.env.NODE_ENV === "development";
 
   useEffect(() => {
     if (state.redirect) {
@@ -46,23 +57,25 @@ export function RegisterForm() {
   }, [state.redirect, router]);
 
   useEffect(() => {
-    if (state.saved) setFormValues(state.saved);
+    if (!state.saved) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setFormValues(state.saved ?? DEFAULT_FORM);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [state.saved]);
 
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
   const [passwordMismatch, setPasswordMismatch] = useState(false);
-  const [isLocalhost, setIsLocalhost] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(
+    isDevelopment ? "localhost-bypass" : null
+  );
   const passwordRepeatRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const onLocalhost =
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-    setIsLocalhost(onLocalhost);
-    if (onLocalhost) setTurnstileToken("localhost-bypass");
-  }, []);
+  const canSubmit =
+    (isDevelopment && turnstileToken === "localhost-bypass") ||
+    Boolean(turnstileSiteKey && turnstileToken);
 
   const checkPasswordMatch = useCallback((pwd: string, repeat: string) => {
     const mismatch = repeat.length > 0 && pwd !== repeat;
@@ -71,6 +84,17 @@ export function RegisterForm() {
       mismatch ? "Die Passwörter stimmen nicht überein." : ""
     );
   }, []);
+
+  if (state.confirmationMessage) {
+    return (
+      <div className="space-y-4 text-center" role="status">
+        <p className="font-medium text-foreground">Registrierung eingegangen</p>
+        <p className="text-sm text-muted-foreground">
+          {state.confirmationMessage}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="space-y-6">
@@ -409,20 +433,26 @@ export function RegisterForm() {
           {state.error}
         </p>
       )}
-      {isLocalhost && turnstileToken === "localhost-bypass" && (
+      {isDevelopment && turnstileToken === "localhost-bypass" && (
         <input type="hidden" name="cf-turnstile-response" value="localhost-bypass" readOnly />
       )}
-      <Turnstile
-        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
-        onSuccess={(token) => setTurnstileToken(token)}
-        onExpire={() => setTurnstileToken(null)}
-        onError={() => isLocalhost && setTurnstileToken("localhost-bypass")}
-        options={{ theme: "light", size: "normal" }}
-      />
+      {turnstileSiteKey ? (
+        <Turnstile
+          siteKey={turnstileSiteKey}
+          onSuccess={(token) => setTurnstileToken(token)}
+          onExpire={() => setTurnstileToken(null)}
+          onError={() => isDevelopment && setTurnstileToken("localhost-bypass")}
+          options={{ theme: "light", size: "normal" }}
+        />
+      ) : !isDevelopment ? (
+        <p className="text-sm text-destructive" role="alert">
+          Registrierung ist aktuell nicht verfügbar. Bitte kontaktiere den Vorstand.
+        </p>
+      ) : null}
       <Button
         type="submit"
         className="w-full"
-        disabled={!turnstileToken}
+        disabled={!canSubmit}
       >
         Registrieren
       </Button>

@@ -24,6 +24,13 @@ export type RegisterSavedState = {
   sepa: boolean;
 };
 
+export type RegisterActionState = {
+  error: string;
+  redirect?: string;
+  saved?: RegisterSavedState;
+  confirmationMessage?: string;
+};
+
 /**
  * Validiert Datum im ISO-Format YYYY-MM-DD (vom Date-Picker).
  */
@@ -34,9 +41,9 @@ function isValidDate(value: string): boolean {
 }
 
 export async function registerAction(
-  _prevState: { error: string },
+  _prevState: RegisterActionState,
   formData: FormData
-): Promise<{ error: string; redirect?: string; saved?: RegisterSavedState }> {
+): Promise<RegisterActionState> {
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
   const passwordRepeat = formData.get("passwordRepeat") as string;
@@ -126,7 +133,14 @@ export async function registerAction(
   if (!isValidDate(geburtstagRaw!)) {
     return { error: "Bitte wähle ein gültiges Geburtsdatum im Picker aus.", saved };
   }
-  const geburtstag = geburtstagRaw!;
+
+  const semesterNumber = Number(semester);
+  if (
+    student === "Ja" &&
+    (!Number.isInteger(semesterNumber) || semesterNumber < 1 || semesterNumber > 99)
+  ) {
+    return { error: "Bitte gib ein gültiges Semester als Zahl ein.", saved };
+  }
 
   const ibanClean = iban!.replace(/\s/g, "");
   const bicClean = bic!.replace(/\s/g, "");
@@ -149,26 +163,39 @@ export async function registerAction(
     turnstileToken === "localhost-bypass" && process.env.NODE_ENV === "development";
 
   if (!isLocalhostBypass) {
-    const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        secret: process.env.TURNSTILE_SECRET_KEY ?? "",
-        response: turnstileToken,
-      }),
-    });
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (!turnstileSecret) {
+      return {
+        error: "Registrierung ist aktuell nicht verfügbar. Bitte kontaktiere den Vorstand.",
+        saved,
+      };
+    }
 
-    const turnstileData = (await turnstileRes.json()) as { success?: boolean };
-    if (!turnstileData.success) {
-      return { error: "Bot-Schutz fehlgeschlagen. Bitte versuche es erneut.", saved };
+    try {
+      const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: turnstileToken,
+        }),
+      });
+
+      const turnstileData = (await turnstileRes.json()) as { success?: boolean };
+      if (!turnstileRes.ok || !turnstileData.success) {
+        return { error: "Bot-Schutz fehlgeschlagen. Bitte versuche es erneut.", saved };
+      }
+    } catch {
+      return {
+        error: "Bot-Schutz konnte nicht geprüft werden. Bitte versuche es später erneut.",
+        saved,
+      };
     }
   }
 
   const supabase = await createClient();
 
   // options.data: Keys exakt wie vom SQL-Trigger erwartet (raw_user_meta_data->>'Vorname' etc.).
-  console.log("PAYLOAD CHECK:", formData.get("vorname"));
-
   const { data: authData, error: signUpError } = await supabase.auth.signUp({
     email: email!,
     password: password!,
@@ -184,7 +211,7 @@ export async function registerAction(
         Handynummer: handynummer, // Vorwahl + Nummer (bereits aus formData zusammengesetzt)
         Fach: formData.get("studiengang"),
         Abschluss: formData.get("abschluss"),
-        Semester: formData.get("semester"),
+        Semester: student === "Ja" ? String(semesterNumber) : "",
         "Uni/OTH": formData.get("hochschultyp"),
         IBAN: ibanClean,
         BIC: bicClean,
@@ -199,6 +226,14 @@ export async function registerAction(
 
   if (!authData.user) {
     return { error: "Registrierung fehlgeschlagen. Bitte erneut versuchen.", saved };
+  }
+
+  if (!authData.session) {
+    return {
+      error: "",
+      confirmationMessage:
+        "Registrierung erfolgreich. Bitte bestätige deine E-Mail-Adresse, bevor du dich anmeldest.",
+    };
   }
 
   return { error: "", redirect: "/dashboard" };

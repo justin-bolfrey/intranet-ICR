@@ -52,7 +52,7 @@ export function UnregisterEventButton({ eventId, eventTitle }: Props) {
         <AlertDialogHeader>
           <AlertDialogTitle>Abmeldung</AlertDialogTitle>
           <AlertDialogDescription>
-            Möchtest du deine Anmeldung für „{eventTitle}" zurückziehen?
+            Möchtest du deine Anmeldung für &quot;{eventTitle}&quot; zurückziehen?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
