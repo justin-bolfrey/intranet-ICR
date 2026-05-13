@@ -11,6 +11,7 @@ import {
   CalendarDays,
   LineChart,
   Menu,
+  MessageCircle,
   Settings,
   X,
   Users,
@@ -42,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: "Vorstand", href: "/board-members", icon: UsersRound, allowedRoles: ["member", "admin", "board", "alumni"] },
   { name: "Mitglieder", href: "/members", icon: Users, allowedRoles: ["member", "admin", "board", "alumni"] },
   { name: "Kalender", href: "/calendar", icon: Calendar, allowedRoles: ["member", "admin", "board", "alumni"] },
+  { name: "WhatsApp Gruppe", href: "/whatsapp", icon: MessageCircle, allowedRoles: ["member", "admin", "board", "alumni"] },
   { name: "Admin Bereich", href: "/admin", icon: Settings, allowedRoles: ["admin", "board"] },
   { name: "Insights", href: "/insights", icon: LineChart, allowedRoles: ["board"] },
 ];
