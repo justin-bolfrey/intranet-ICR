@@ -15,6 +15,13 @@ export async function validateIbanAction(iban: string): Promise<{
     return { valid: false, error: "IBAN eingeben" };
   }
 
+  // Diese Action ist ohne Login aufrufbar und ruft eine externe API auf.
+  // Strenge Format-/Längenprüfung verhindert Missbrauch als HTTP-Proxy und
+  // überlange Anfragen (max. IBAN-Länge ist 34 Zeichen, ISO 13616).
+  if (cleaned.length > 34 || !/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(cleaned)) {
+    return { valid: false, error: "IBAN ist ungültig." };
+  }
+
   try {
     // validateBankCode=false: Nicht alle Banken (z.B. 10010178 Postbank) sind in der DB.
     // Format + Prüfsumme werden trotzdem validiert. Bankdaten nur wenn vorhanden.

@@ -61,6 +61,17 @@ export async function uploadEventImage(
   } = await supabase.auth.getUser();
   if (!user) return { url: null, error: "Nicht eingeloggt." };
 
+  // Upload nur für Admin/Vorstand – analog zu createEvent/deleteEvent.
+  // Ohne diese Prüfung könnte jedes eingeloggte Mitglied den Storage-Bucket befüllen.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select('"Rolle"')
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const role = ((profile?.["Rolle"] as string) ?? "member").trim().toLowerCase();
+  if (role !== "admin" && role !== "board")
+    return { url: null, error: "Keine Berechtigung." };
+
   const file = formData.get("file") as File | null;
   if (!file?.size) return { url: null, error: "Keine Datei ausgewählt." };
   if (file.size > MAX_FILE_SIZE)

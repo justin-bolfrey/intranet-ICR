@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("*")
+      .select('"Status"')
       .eq("user_id", user.id)
       .maybeSingle();
 

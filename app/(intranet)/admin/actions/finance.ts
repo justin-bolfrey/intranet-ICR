@@ -45,13 +45,6 @@ export type FinanceExportResult = {
   stats: FilterStats;
 };
 
-export type FinanceExportState = {
-  error: string;
-  semester: Semester;
-  year: number;
-  rows: FinanceMemberRow[];
-};
-
 function getPeriodStart(semester: Semester, year: number): Date {
   if (semester === "SoSe") {
     return new Date(year, 2, 15); // 15.03.YYYY (Monat 2, 0-basiert)
@@ -202,46 +195,7 @@ export async function getFinanceExportData(
   }
 
   stats.valid = validMembers.length;
-  console.log(`--- SEPA EXPORT FILTER STATS (${semester} ${year}) ---`, stats);
 
   return { validMembers, invalidMembers, stats };
-}
-
-export async function getFinanceExportDataAction(
-  _prevState: FinanceExportState,
-  formData: FormData
-): Promise<FinanceExportState> {
-  const semesterValue = (formData.get("semester") as string) ?? "";
-  const yearValue = Number(formData.get("year") ?? new Date().getFullYear());
-
-  const semester = (semesterValue as Semester) || "SoSe";
-
-  if (Number.isNaN(yearValue) || yearValue < 2000 || yearValue > 2100) {
-    return {
-      error: "Bitte ein gültiges Jahr angeben.",
-      semester,
-      year: new Date().getFullYear(),
-      rows: [],
-    };
-  }
-
-  try {
-    const { validMembers } = await getFinanceExportData(semester, yearValue);
-    return {
-      error: "",
-      semester,
-      year: yearValue,
-      rows: validMembers,
-    };
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Unbekannter Fehler beim Laden.";
-    return {
-      error: message,
-      semester,
-      year: yearValue,
-      rows: [],
-    };
-  }
 }
 

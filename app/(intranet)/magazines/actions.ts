@@ -14,12 +14,6 @@ import {
 
 export type RequestBvhResult = { ok: boolean; error?: string };
 
-/** Prüft, ob der aktuelle User bereits eine BVH-Anfrage gestellt hat. */
-export async function hasRequestedBvhLogin(): Promise<boolean> {
-  const status = await getBvhLoginStatusForCurrentUser();
-  return status.hasRequested;
-}
-
 /** Status der BVH-Anfrage des aktuellen Users (für Anzeige „Erledigt“ → „Login per E-Mail versendet“). */
 export type BvhLoginStatus = { hasRequested: boolean; handled: boolean };
 

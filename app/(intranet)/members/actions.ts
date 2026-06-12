@@ -17,15 +17,21 @@ export async function searchMembers(query: string): Promise<MemberRow[]> {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const q = (query || "").trim();
+  const q = (query || "").trim().slice(0, 100);
   if (!q) return [];
 
-  const pattern = `%${q}%`;
-  const escaped = pattern.replace(/"/g, '\\"');
+  // Eingabe für den PostgREST-`or`-Filter absichern: Backslash und Quote escapen
+  // (Reihenfolge wichtig) und LIKE-Wildcards entfernen, damit der Filter nicht
+  // manipuliert oder zu einer Voll-Tabellen-Suche aufgeweitet werden kann.
+  const safe = q
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/[%_]/g, "");
+  const pattern = `%${safe}%`;
   const { data, error } = await admin
     .from("profiles")
     .select('Vorname, Nachname, "Studiengang / Fach"')
-    .or(`Vorname.ilike."${escaped}",Nachname.ilike."${escaped}"`);
+    .or(`Vorname.ilike."${pattern}",Nachname.ilike."${pattern}"`);
 
   if (error) return [];
 

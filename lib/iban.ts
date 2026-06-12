@@ -62,14 +62,3 @@ export function validateBICFormat(bic: string): boolean {
   const cleaned = bic.replace(/\s/g, "").toUpperCase();
   return /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned);
 }
-
-/**
- * Formatiert IBAN zur Anzeige (4er-Blöcke).
- */
-export function formatIBAN(iban: string): string {
-  return iban
-    .replace(/\s/g, "")
-    .toUpperCase()
-    .replace(/(.{4})/g, "$1 ")
-    .trim();
-}
