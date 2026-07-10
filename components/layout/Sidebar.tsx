@@ -163,7 +163,11 @@ export function Sidebar({ profile }: { profile: Profile }) {
                   whileHover="hover"
                   variants={navItemVariants}
                   onHoverStart={() => setHoveredHref(item.href)}
-                  onHoverEnd={() => setHoveredHref(null)}
+                  onHoverEnd={() =>
+                    setHoveredHref((current) =>
+                      current === item.href ? null : current
+                    )
+                  }
                   className={`group flex items-center gap-3 overflow-visible rounded-md px-3 py-2 text-sm transition-colors duration-200 ${
                     active ? "bg-red-50" : "hover:bg-red-50"
                   }`}

@@ -1,10 +1,10 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import type { ComponentType, LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  defaultNavIconVariants,
   getNavIconTransformOrigin,
   getNavIconVariants,
 } from "@/components/layout/nav-icon-motion";
@@ -35,7 +35,7 @@ const CUSTOM_NAV_ICONS: Record<string, ComponentType<CustomNavIconProps>> = {
 };
 
 function iconColorClass(active: boolean): string {
-  return active ? "text-primary" : "text-gray-600";
+  return active ? "text-primary" : "text-gray-600 group-hover:text-primary";
 }
 
 const iconShellClass =
@@ -79,7 +79,7 @@ export function SidebarNavIcon({
   }
 
   if (CustomIcon) {
-    if (prefersReducedMotion && href === "/insights") {
+    if (prefersReducedMotion) {
       return (
         <span className={cn(iconShellClass, colorClass)} aria-hidden="true">
           <Icon className="h-5 w-5" strokeWidth={2} />
@@ -94,9 +94,15 @@ export function SidebarNavIcon({
     );
   }
 
-  const variants = prefersReducedMotion
-    ? defaultNavIconVariants
-    : getNavIconVariants(href);
+  if (prefersReducedMotion) {
+    return (
+      <span className={cn(iconShellClass, colorClass)} aria-hidden="true">
+        <Icon className="h-5 w-5" strokeWidth={2} />
+      </span>
+    );
+  }
+
+  const variants = getNavIconVariants(href);
   const transformOrigin = getNavIconTransformOrigin(href);
 
   return (
