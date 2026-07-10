@@ -4,14 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   Bell,
   BookOpen,
   Calendar,
-  CalendarDays,
   LineChart,
   Menu,
   MessageCircle,
+  PartyPopper,
   Settings,
   X,
   Users,
@@ -21,6 +22,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/app/dashboard/logout-button";
 import { checkUnreadNews, markNewsAsRead } from "@/app/(intranet)/news/actions";
+import { SidebarNavIcon } from "@/components/layout/SidebarNavIcon";
+import { navItemVariants } from "@/components/layout/nav-icon-motion";
 
 type Profile = {
   vorname: string;
@@ -38,7 +41,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { name: "News", href: "/news", icon: Bell, allowedRoles: ["member", "admin", "board", "alumni"] },
-  { name: "Events", href: "/events", icon: CalendarDays, allowedRoles: ["member", "admin", "board", "alumni"] },
+  { name: "Events", href: "/events", icon: PartyPopper, allowedRoles: ["member", "admin", "board", "alumni"] },
   { name: "Zeitschriften", href: "/magazines", icon: BookOpen, allowedRoles: ["member", "admin", "board", "alumni"] },
   { name: "Vorstand", href: "/board-members", icon: UsersRound, allowedRoles: ["member", "admin", "board", "alumni"] },
   { name: "Mitglieder", href: "/members", icon: Users, allowedRoles: ["member", "admin", "board", "alumni"] },
@@ -64,6 +67,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
   const router = useRouter();
   const [hasUnread, setHasUnread] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [hoveredHref, setHoveredHref] = useState<string | null>(null);
   const lastReadRef = useRef(profile.letzterNewsAufruf);
   const lastCheckAtRef = useRef<number | null>(null);
   const prevPathnameRef = useRef<string | null>(null);
@@ -149,25 +153,40 @@ export function Sidebar({ profile }: { profile: Profile }) {
       <ul className="space-y-1">
         {visibleItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icon = item.icon;
           const showDot = item.href === "/news" && hasUnread && !active;
 
           return (
             <li key={item.href}>
-              <Link
-                href={item.href}
-                onClick={onNavigate}
-                className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                  active
-                    ? "bg-red-50 font-medium text-primary"
-                    : "text-gray-600 hover:bg-red-50 hover:text-primary"
-                }`}
-              >
-                <Icon className="h-5 w-5 shrink-0 transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:scale-110" />
-                <span className="truncate">{item.name}</span>
-                {showDot && (
-                  <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-red-500" />
-                )}
+              <Link href={item.href} onClick={onNavigate}>
+                <motion.div
+                  initial="rest"
+                  whileHover="hover"
+                  variants={navItemVariants}
+                  onHoverStart={() => setHoveredHref(item.href)}
+                  onHoverEnd={() => setHoveredHref(null)}
+                  className={`group flex items-center gap-3 overflow-visible rounded-md px-3 py-2 text-sm transition-colors duration-200 ${
+                    active ? "bg-red-50" : "hover:bg-red-50"
+                  }`}
+                >
+                  <SidebarNavIcon
+                    href={item.href}
+                    icon={item.icon}
+                    active={active}
+                    isRowHovered={hoveredHref === item.href}
+                  />
+                  <span
+                    className={`truncate ${
+                      active
+                        ? "font-medium text-primary"
+                        : "text-gray-600 group-hover:text-primary"
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                  {showDot && (
+                    <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                  )}
+                </motion.div>
               </Link>
             </li>
           );
